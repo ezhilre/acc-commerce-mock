@@ -77,6 +77,14 @@
 }
 
 /* Responsive Design */
+@media (max-width: 968px) {
+  .section.product-card-container,
+  .product-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
 @media (max-width: 768px) {
   .product-card-container {
     max-width: 100%;
@@ -93,12 +101,23 @@
   .product-price {
     font-size: 16px;
   }
+  
+  .section.product-card-container,
+  .product-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .add-to-cart-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
 }
 
-/* Grid Layout Support */
+/* Grid Layout Support - 3 Column Layout */
 .section.product-card-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   padding: 20px 0;
 }
@@ -107,16 +126,48 @@
   max-width: none;
 }
 
-/* Multiple Product Cards Grid */
+/* Multiple Product Cards Grid - 3 Column Layout */
 .product-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   padding: 20px;
 }
 
 .product-cards-grid .product-card-container {
   max-width: none;
+}
+
+/* Add to Cart Button Styles */
+.add-to-cart-btn {
+  background: #ff6600;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 12px;
+  width: 100%;
+  font-family: var(--body-font-family);
+}
+
+.add-to-cart-btn:hover {
+  background: #e55a00;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 102, 0, 0.3);
+}
+
+.add-to-cart-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(255, 102, 0, 0.3);
+}
+
+.add-to-cart-btn:focus {
+  outline: 2px solid #ff6600;
+  outline-offset: 2px;
 }
 
 /* Loading State */

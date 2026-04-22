@@ -45,6 +45,9 @@ export default function decorate(block) {
       <div class="product-info">
         <h3 class="product-name">${productData.name || ''}</h3>
         <div class="product-price">$${formatPrice(productData.price)}</div>
+        <button class="add-to-cart-btn" type="button" data-product-name="${productData.name || ''}" data-product-price="${formatPrice(productData.price)}">
+          Add to Cart
+        </button>
       </div>
     </div>
   `;

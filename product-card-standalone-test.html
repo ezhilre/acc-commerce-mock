@@ -28,7 +28,7 @@
         
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 30px;
             margin-top: 40px;
         }
@@ -156,10 +156,49 @@
             margin: 0;
         }
 
+        /* Add to Cart Button Styles */
+        .add-to-cart-btn {
+            background: #ff6600;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 12px;
+            width: 100%;
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .add-to-cart-btn:hover {
+            background: #e55a00;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(255, 102, 0, 0.3);
+        }
+
+        .add-to-cart-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 4px rgba(255, 102, 0, 0.3);
+        }
+
+        .add-to-cart-btn:focus {
+            outline: 2px solid #ff6600;
+            outline-offset: 2px;
+        }
+
         /* Responsive Design */
+        @media (max-width: 968px) {
+            .products-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+        }
+
         @media (max-width: 768px) {
             .products-grid {
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                grid-template-columns: 1fr;
                 gap: 20px;
             }
             
@@ -177,8 +216,9 @@
         }
 
         @media (max-width: 480px) {
-            .products-grid {
-                grid-template-columns: 1fr;
+            .add-to-cart-btn {
+                padding: 10px 16px;
+                font-size: 13px;
             }
         }
 
@@ -373,6 +413,9 @@
                 <div class="product-info">
                     <h3 class="product-name">${productData.name || ''}</h3>
                     <div class="product-price">$${formatPrice(productData.price)}</div>
+                    <button class="add-to-cart-btn" type="button" data-product-name="${productData.name || ''}" data-product-price="${formatPrice(productData.price)}">
+                        Add to Cart
+                    </button>
                 </div>
             `;
             
@@ -399,10 +442,31 @@
             productCards.forEach(decorateProductCard);
         });
 
-        // Add click functionality to product cards
+        // Add click functionality to product cards and buttons
         document.addEventListener('click', function(e) {
+            // Handle Add to Cart button clicks
+            if (e.target.classList.contains('add-to-cart-btn')) {
+                e.stopPropagation(); // Prevent triggering the product card click
+                const productName = e.target.dataset.productName;
+                const productPrice = e.target.dataset.productPrice;
+                
+                // Add visual feedback
+                e.target.textContent = 'Added!';
+                e.target.style.background = '#28a745';
+                
+                // Reset button after 2 seconds
+                setTimeout(() => {
+                    e.target.textContent = 'Add to Cart';
+                    e.target.style.background = '#ff6600';
+                }, 2000);
+                
+                alert(`Added to cart:\n${productName}\nPrice: $${productPrice}\n\nThis would typically add the item to the shopping cart.`);
+                return;
+            }
+            
+            // Handle product card clicks (but not when clicking the button)
             const productCard = e.target.closest('.product-card-display');
-            if (productCard) {
+            if (productCard && !e.target.closest('.add-to-cart-btn')) {
                 const productName = productCard.querySelector('.product-name').textContent;
                 alert(`Clicked on: ${productName}\n\nThis would typically navigate to the product detail page.`);
             }
