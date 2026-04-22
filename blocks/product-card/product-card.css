@@ -126,10 +126,14 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   padding: 20px 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  justify-items: center;
 }
 
 .section.product-card-container .product-card-container {
   max-width: none;
+  width: 100%;
 }
 
 /* Multiple Product Cards Grid - 3 Column Layout */
@@ -138,10 +142,21 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  justify-items: center;
 }
 
 .product-cards-grid .product-card-container {
   max-width: none;
+  width: 100%;
+}
+
+/* Main container centering for single product cards */
+main .section .product-card-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 /* Add to Cart Button Styles */
