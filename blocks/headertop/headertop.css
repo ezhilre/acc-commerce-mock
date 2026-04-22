@@ -20,20 +20,7 @@
 .header-top-disclaimer {
   display: flex;
   align-items: center;
-  gap: 8px;
   order: 0;
-}
-
-.header-top-disclaimer-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #f4a261;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.header-top-disclaimer-label::after {
-  content: ':';
 }
 
 .header-top-disclaimer-text {
@@ -45,15 +32,7 @@
 .header-top-signin {
   display: flex;
   align-items: center;
-  gap: 12px;
   order: 1;
-}
-
-.header-top-signin-label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .header-top-signin-btn {
