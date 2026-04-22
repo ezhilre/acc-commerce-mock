@@ -4,6 +4,7 @@
  * @param {Element} block The HeaderTop block element
  */
 export default function decorate(block) {
+    console.log('Decorating HeaderTop block');
   block.textContent = '';
 
   const headerTop = document.createElement('div');
