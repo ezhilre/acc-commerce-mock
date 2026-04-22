@@ -1,8 +1,13 @@
-.header-top {
+.headertop-wrapper {
   background-color: #1a1a2e;
   color: #fff;
   width: 100%;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.headertop {
+  background-color: #1a1a2e;
+  width: 100%;
 }
 
 .header-top-inner {
@@ -25,7 +30,7 @@
 
 .header-top-disclaimer-text {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.85);
+  color: #fff;
 }
 
 /* ── Sign In (RIGHT) ─────────────────────────────────────── */
