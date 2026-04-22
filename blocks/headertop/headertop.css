@@ -8,6 +8,7 @@
 .headertop {
   background-color: #1a1a2e;
   width: 100%;
+  padding: 8px 0;
 }
 
 .header-top-inner {
@@ -17,7 +18,7 @@
   justify-content: space-between;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 8px 24px;
+  padding: 0 24px;
   gap: 16px;
 }
 
@@ -30,7 +31,9 @@
 
 .header-top-disclaimer-text {
   font-size: 12px;
-  color: #fff;
+  /* visible on both dark (#1a1a2e) and white backgrounds */
+  color: #f4a261;
+  font-style: italic;
 }
 
 /* ── Sign In (RIGHT) ─────────────────────────────────────── */
