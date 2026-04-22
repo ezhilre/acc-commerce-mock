@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Card Test - Luma Style</title>
+    <link rel="stylesheet" href="styles/styles.css">
+    <link rel="stylesheet" href="blocks/product-card/product-card.css">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .product-card-container {
+            max-width: none;
+        }
+        
+        /* EDS Table Display (for reference) */
+        .eds-reference {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+        }
+        
+        .eds-reference h2 {
+            margin-top: 0;
+            color: #666;
+            font-size: 18px;
+        }
+        
+        .eds-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        .eds-table th,
+        .eds-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        .eds-table th {
+            background-color: #f8f8f8;
+            font-weight: 600;
+        }
+        
+        .eds-table img {
+            max-width: 60px;
+            max-height: 60px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Product Card Component - Luma Style</h1>
+        
+        <div class="eds-reference">
+            <h2>EDS Structure Reference (Internal Use)</h2>
+            <table class="eds-table">
+                <thead>
+                    <tr>
+                        <th>Field Name (Internal)</th>
+                        <th>Display Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Category</td>
+                        <td>Men</td>
+                    </tr>
+                    <tr>
+                        <td>Product Name</td>
+                        <td>Cotton Solid Regular Fit</td>
+                    </tr>
+                    <tr>
+                        <td>Product Image</td>
+                        <td><img src="https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=400&h=400&fit=crop" alt="Blue Polo Shirt"></td>
+                    </tr>
+                    <tr>
+                        <td>Product Cost</td>
+                        <td>1500</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="products-grid">
+            <!-- Product Card 1 - Cotton Solid Regular Fit -->
+            <div class="product-card">
+                <table>
+                    <tr>
+                        <td>Category</td>
+                        <td>Men</td>
+                    </tr>
+                    <tr>
+                        <td>Product Name</td>
+                        <td>Cotton Solid Regular Fit</td>
+                    </tr>
+                    <tr>
+                        <td>Product Image</td>
+                        <td><img src="https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=400&h=400&fit=crop" alt="Blue Polo Shirt"></td>
+                    </tr>
+                    <tr>
+                        <td>Product Cost</td>
+                        <td>1500</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Product Card 2 - Aether Gym Pant -->
+            <div class="product-card">
+                <table>
+                    <tr>
+                        <td>Category</td>
+                        <td>Men</td>
+                    </tr>
+                    <tr>
+                        <td>Product Name</td>
+                        <td>Aether Gym Pant</td>
+                    </tr>
+                    <tr>
+                        <td>Product Image</td>
+                        <td><img src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&h=400&fit=crop" alt="Aether Gym Pant"></td>
+                    </tr>
+                    <tr>
+                        <td>Product Cost</td>
+                        <td>59.20</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Product Card 3 - Cronus Yoga Pant -->
+            <div class="product-card">
+                <table>
+                    <tr>
+                        <td>Category</td>
+                        <td>Men</td>
+                    </tr>
+                    <tr>
+                        <td>Product Name</td>
+                        <td>Cronus Yoga Pant</td>
+                    </tr>
+                    <tr>
+                        <td>Product Image</td>
+                        <td><img src="https://images.unsplash.com/photo-1506629905607-cc7c5ee65db5?w=400&h=400&fit=crop" alt="Cronus Yoga Pant"></td>
+                    </tr>
+                    <tr>
+                        <td>Product Cost</td>
+                        <td>38.40</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Product Card 4 - Orestes Fitness Short -->
+            <div class="product-card">
+                <table>
+                    <tr>
+                        <td>Category</td>
+                        <td>Men</td>
+                    </tr>
+                    <tr>
+                        <td>Product Name</td>
+                        <td>Orestes Fitness Short</td>
+                    </tr>
+                    <tr>
+                        <td>Product Image</td>
+                        <td><img src="https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400&h=400&fit=crop" alt="Orestes Fitness Short"></td>
+                    </tr>
+                    <tr>
+                        <td>Product Cost</td>
+                        <td>35.00</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { loadCSS } from './scripts/aem.js';
+        
+        // Load the product card block
+        async function loadProductCards() {
+            // Load CSS
+            await loadCSS('./blocks/product-card/product-card.css');
+            
+            // Import and initialize the product card block
+            const { default: decorate } = await import('./blocks/product-card/product-card.js');
+            
+            // Find all product card blocks and decorate them
+            document.querySelectorAll('.product-card').forEach(decorate);
+        }
+
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadProductCards);
+        } else {
+            loadProductCards();
+        }
+    </script>
+</body>
+</html>
