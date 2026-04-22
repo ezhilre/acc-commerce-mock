@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HeaderMain Standalone Test</title>
+  <style>
+    /* HeaderMain CSS */
+    .headermain {
+      width: 100%;
+    }
+
+    .headermain-container {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      padding: 1rem 2rem;
+      background-color: #fff;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    /* Logo Section */
+    .headermain-logo {
+      margin-right: auto;
+    }
+
+    .headermain-logo a {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .headermain-logo img {
+      height: 60px;
+      width: auto;
+      max-width: 200px;
+      object-fit: contain;
+    }
+
+    .headermain-logo picture {
+      display: flex;
+      align-items: center;
+    }
+
+    .headermain-logo picture img {
+      height: 60px;
+      width: auto;
+      max-width: 200px;
+      object-fit: contain;
+    }
+
+    .headermain-logo .logo-text {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #333;
+    }
+
+    /* Navigation Items */
+    .headermain-nav-item {
+      display: flex;
+      align-items: center;
+    }
+
+    .headermain-nav-link {
+      padding: 0.75rem 1.5rem;
+      text-decoration: none;
+      color: #333;
+      font-size: 1rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      border-radius: 4px;
+    }
+
+    .headermain-nav-link:hover {
+      color: #007bff;
+      background-color: #f8f9fa;
+    }
+
+    .headermain-nav-link:focus {
+      outline: 2px solid #007bff;
+      outline-offset: 2px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .headermain-container {
+        flex-wrap: wrap;
+        gap: 1rem;
+        padding: 1rem;
+      }
+
+      .headermain-logo {
+        flex-basis: 100%;
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+        text-align: center;
+      }
+
+      .headermain-nav-item {
+        flex: 1;
+        justify-content: center;
+      }
+
+      .headermain-nav-link {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+      }
+
+      .headermain-logo img,
+      .headermain-logo picture img {
+        height: 50px;
+        max-width: 150px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .headermain-container {
+        gap: 0.5rem;
+        padding: 0.75rem;
+      }
+
+      .headermain-logo img,
+      .headermain-logo picture img {
+        height: 40px;
+        max-width: 120px;
+      }
+
+      .headermain-nav-link {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+      }
+
+      .headermain-logo .logo-text {
+        font-size: 1.25rem;
+      }
+    }
+
+    /* Test page styles */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+    
+    main {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .test-content {
+      background-color: #f8f9fa;
+      padding: 2rem;
+      border-radius: 8px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="headermain" id="headerMainBlock">
+      <!-- This will be populated by JavaScript -->
+    </div>
+  </header>
+  
+  <main>
+    <div class="test-content">
+      <h1>HeaderMain Component Test</h1>
+      <p>This page demonstrates the HeaderMain component with:</p>
+      <ul style="text-align: left; display: inline-block;">
+        <li>Logo section (fallback to "Beta Commerce" text)</li>
+        <li>Men category link: <a href="https://main--acc-commerce-mock--ezhilre.aem.live/men" target="_blank">https://main--acc-commerce-mock--ezhilre.aem.live/men</a></li>
+        <li>Women category link: <a href="https://main--acc-commerce-mock--ezhilre.aem.live/women" target="_blank">https://main--acc-commerce-mock--ezhilre.aem.live/women</a></li>
+        <li>Car & Motorbike category</li>
+      </ul>
+      <p>The header should be responsive and work on different screen sizes.</p>
+      <p><strong>Try resizing the browser window to test responsiveness!</strong></p>
+    </div>
+  </main>
+
+  <script>
+    // Inline HeaderMain decoration function
+    function decorateHeaderMain(block) {
+      // Clear existing content
+      block.textContent = '';
+      
+      // Create main container
+      const headerMainContainer = document.createElement('div');
+      headerMainContainer.classList.add('headermain-container');
+
+      // Create logo section
+      const logoSection = document.createElement('div');
+      logoSection.classList.add('headermain-logo');
+      
+      const logoLink = document.createElement('a');
+      logoLink.href = '/';
+      logoLink.setAttribute('aria-label', 'Home');
+      
+      // Fallback text logo (since image might not load locally)
+      const logoText = document.createElement('span');
+      logoText.classList.add('logo-text');
+      logoText.textContent = 'Beta Commerce';
+      logoLink.appendChild(logoText);
+      
+      logoSection.appendChild(logoLink);
+      headerMainContainer.appendChild(logoSection);
+
+      // Create navigation items
+      const categories = [
+        { text: 'Men', href: 'https://main--acc-commerce-mock--ezhilre.aem.live/men' },
+        { text: 'Women', href: 'https://main--acc-commerce-mock--ezhilre.aem.live/women' },
+        { text: 'Car & Motorbike', href: '/car-motorbike' }
+      ];
+      
+      categories.forEach(category => {
+        const navItem = document.createElement('div');
+        navItem.classList.add('headermain-nav-item');
+        
+        const link = document.createElement('a');
+        link.href = category.href;
+        link.textContent = category.text;
+        link.classList.add('headermain-nav-link');
+        
+        navItem.appendChild(link);
+        headerMainContainer.appendChild(navItem);
+      });
+
+      // Add the container to the block
+      block.appendChild(headerMainContainer);
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const headerMainBlock = document.getElementById('headerMainBlock');
+      decorateHeaderMain(headerMainBlock);
+    });
+  </script>
+</body>
+</html>

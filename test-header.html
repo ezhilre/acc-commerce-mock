@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HeaderMain Test</title>
+  <link rel="stylesheet" href="/styles/styles.css">
+  <style>
+    /* Test styles */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+    
+    main {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .test-content {
+      background-color: #f8f9fa;
+      padding: 2rem;
+      border-radius: 8px;
+      text-align: center;
+    }
+  </style>
+  <script src="/scripts/scripts.js" type="module"></script>
+</head>
+<body>
+  <header>
+    <div class="headermain block" data-block-name="headermain">
+      <div>
+        <div>Logo</div>
+        <div>
+          <picture>
+            <source type="image/webp" srcset="./media_17f794629ab97a4e51b64872cd21db81c627a5c28.jpg?width=2000&format=webply&optimize=medium" media="(min-width: 600px)">
+            <source type="image/webp" srcset="./media_17f794629ab97a4e51b64872cd21db81c627a5c28.jpg?width=750&format=webply&optimize=medium">
+            <source type="image/jpeg" srcset="./media_17f794629ab97a4e51b64872cd21db81c627a5c28.jpg?width=2000&format=jpg&optimize=medium" media="(min-width: 600px)">
+            <img loading="lazy" alt="Ecommerce Logo Images – Browse 229,562 Stock Photos, Vectors, and Video | Adobe Stock" src="./media_17f794629ab97a4e51b64872cd21db81c627a5c28.jpg?width=750&format=jpg&optimize=medium" width="360" height="360">
+          </picture>
+        </div>
+      </div>
+      <div>
+        <div>Men Category</div>
+        <div>Men</div>
+      </div>
+      <div>
+        <div>Women Category</div>
+        <div>Women</div>
+      </div>
+      <div>
+        <div>Car</div>
+        <div>Car & Motorbike</div>
+      </div>
+    </div>
+  </header>
+  
+  <main>
+    <div class="test-content">
+      <h1>HeaderMain Component Test</h1>
+      <p>This page demonstrates the HeaderMain component with:</p>
+      <ul style="text-align: left; display: inline-block;">
+        <li>Logo section (with fallback to "Beta Commerce" if image fails)</li>
+        <li>Men category link: <a href="https://main--acc-commerce-mock--ezhilre.aem.live/men">https://main--acc-commerce-mock--ezhilre.aem.live/men</a></li>
+        <li>Women category link: <a href="https://main--acc-commerce-mock--ezhilre.aem.live/women">https://main--acc-commerce-mock--ezhilre.aem.live/women</a></li>
+        <li>Car & Motorbike category</li>
+      </ul>
+      <p>The header should be responsive and work on different screen sizes.</p>
+    </div>
+  </main>
+</body>
+</html>

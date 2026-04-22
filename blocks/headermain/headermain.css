@@ -1,0 +1,130 @@
+.headermain {
+  width: 100%;
+}
+
+.headermain-container {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 1rem 2rem;
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Logo Section */
+.headermain-logo {
+  margin-right: auto;
+}
+
+.headermain-logo a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.headermain-logo img {
+  height: 60px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+}
+
+.headermain-logo picture {
+  display: flex;
+  align-items: center;
+}
+
+.headermain-logo picture img {
+  height: 60px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+}
+
+.headermain-logo .logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+}
+
+/* Navigation Items */
+.headermain-nav-item {
+  display: flex;
+  align-items: center;
+}
+
+.headermain-nav-link {
+  padding: 0.75rem 1.5rem;
+  text-decoration: none;
+  color: #333;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  border-radius: 4px;
+}
+
+.headermain-nav-link:hover {
+  color: #007bff;
+  background-color: #f8f9fa;
+}
+
+.headermain-nav-link:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .headermain-container {
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .headermain-logo {
+    flex-basis: 100%;
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  .headermain-nav-item {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .headermain-nav-link {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .headermain-logo img,
+  .headermain-logo picture img {
+    height: 50px;
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .headermain-container {
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .headermain-logo img,
+  .headermain-logo picture img {
+    height: 40px;
+    max-width: 120px;
+  }
+
+  .headermain-nav-link {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .headermain-logo .logo-text {
+    font-size: 1.25rem;
+  }
+}
