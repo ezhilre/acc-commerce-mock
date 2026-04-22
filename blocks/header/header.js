@@ -109,7 +109,7 @@ function toggleMenu(nav, navSections, forceExpanded = null) {
 }
 
 /**
- * Builds and returns the header-top bar (Sign In left, Disclaimer right)
+ * Builds and returns the header-top bar (Disclaimer left, Sign In right)
  * @returns {HTMLElement}
  */
 function buildHeaderTop() {
@@ -119,13 +119,19 @@ function buildHeaderTop() {
   const inner = document.createElement('div');
   inner.classList.add('header-top-inner');
 
-  // Sign In section (left)
+  // Disclaimer section (LEFT)
+  const disclaimerSection = document.createElement('div');
+  disclaimerSection.classList.add('header-top-disclaimer');
+
+  const disclaimerText = document.createElement('span');
+  disclaimerText.classList.add('header-top-disclaimer-text');
+  disclaimerText.textContent = 'This is a demo website used to teach Adobe Experience Platform Data Collection';
+
+  disclaimerSection.append(disclaimerText);
+
+  // Sign In section (RIGHT)
   const signInSection = document.createElement('div');
   signInSection.classList.add('header-top-signin');
-
-  const signInLabel = document.createElement('span');
-  signInLabel.classList.add('header-top-signin-label');
-  signInLabel.textContent = 'Signin CTA';
 
   const signInBtn = document.createElement('a');
   signInBtn.classList.add('header-top-signin-btn');
@@ -133,86 +139,126 @@ function buildHeaderTop() {
   signInBtn.textContent = 'Sign In';
   signInBtn.setAttribute('aria-label', 'Sign In to your account');
 
-  signInSection.append(signInLabel, signInBtn);
+  signInSection.append(signInBtn);
 
-  // Disclaimer section (right)
-  const disclaimerSection = document.createElement('div');
-  disclaimerSection.classList.add('header-top-disclaimer');
-
-  const disclaimerLabel = document.createElement('span');
-  disclaimerLabel.classList.add('header-top-disclaimer-label');
-  disclaimerLabel.textContent = 'Disclaimer';
-
-  const disclaimerText = document.createElement('span');
-  disclaimerText.classList.add('header-top-disclaimer-text');
-  disclaimerText.textContent = 'This is a demo website';
-
-  disclaimerSection.append(disclaimerLabel, disclaimerText);
-
-  inner.append(signInSection, disclaimerSection);
+  inner.append(disclaimerSection, signInSection);
   headerTop.append(inner);
   return headerTop;
 }
 
 /**
- * loads and decorates the header, mainly the nav
+ * Builds and returns the Luma-style main navigation
+ * @returns {HTMLElement}
+ */
+function buildLumaMainNav() {
+  const mainNav = document.createElement('div');
+  mainNav.classList.add('luma-main-nav');
+
+  const container = document.createElement('div');
+  container.classList.add('luma-nav-container');
+
+  // Logo section
+  const logoSection = document.createElement('div');
+  logoSection.classList.add('luma-logo');
+  
+  const logoLink = document.createElement('a');
+  logoLink.href = '/';
+  logoLink.setAttribute('aria-label', 'Home');
+  
+  const logoText = document.createElement('span');
+  logoText.classList.add('luma-logo-text');
+  logoText.textContent = 'BETA COMMERCE';
+  logoLink.appendChild(logoText);
+  
+  logoSection.appendChild(logoLink);
+  container.appendChild(logoSection);
+
+  // Navigation section
+  const navSection = document.createElement('nav');
+  navSection.classList.add('luma-nav');
+  
+  const navList = document.createElement('ul');
+  navList.classList.add('luma-nav-list');
+  
+  const navItems = [
+    { text: 'WHAT\'S NEW', href: '/whats-new' },
+    { text: 'WOMEN', href: 'https://main--acc-commerce-mock--ezhilre.aem.live/women' },
+    { text: 'MEN', href: 'https://main--acc-commerce-mock--ezhilre.aem.live/men' },
+    { text: 'GEAR', href: '/gear' },
+    { text: 'TRAINING', href: '/training' },
+    { text: 'SALE', href: '/sale' }
+  ];
+  
+  navItems.forEach(item => {
+    const listItem = document.createElement('li');
+    const link = document.createElement('a');
+    link.href = item.href;
+    link.textContent = item.text;
+    link.classList.add('luma-nav-link');
+    listItem.appendChild(link);
+    navList.appendChild(listItem);
+  });
+  
+  navSection.appendChild(navList);
+  container.appendChild(navSection);
+
+  // Actions section (search + cart)
+  const actionsSection = document.createElement('div');
+  actionsSection.classList.add('luma-actions');
+  
+  // Search
+  const searchForm = document.createElement('form');
+  searchForm.classList.add('luma-search');
+  searchForm.setAttribute('role', 'search');
+  
+  const searchInput = document.createElement('input');
+  searchInput.type = 'search';
+  searchInput.placeholder = 'Search entire store here...';
+  searchInput.classList.add('luma-search-input');
+  searchInput.setAttribute('aria-label', 'Search products');
+  
+  const searchButton = document.createElement('button');
+  searchButton.type = 'submit';
+  searchButton.classList.add('luma-search-button');
+  searchButton.setAttribute('aria-label', 'Search');
+  searchButton.innerHTML = '🔍';
+  
+  searchForm.appendChild(searchInput);
+  searchForm.appendChild(searchButton);
+  
+  // Cart
+  const cartLink = document.createElement('a');
+  cartLink.href = '/cart';
+  cartLink.classList.add('luma-cart');
+  cartLink.setAttribute('aria-label', 'Shopping cart');
+  
+  const cartIcon = document.createElement('span');
+  cartIcon.classList.add('luma-cart-icon');
+  cartIcon.innerHTML = '🛒';
+  
+  const cartCount = document.createElement('span');
+  cartCount.classList.add('luma-cart-count');
+  cartCount.textContent = '0';
+  
+  cartLink.appendChild(cartIcon);
+  cartLink.appendChild(cartCount);
+  
+  actionsSection.appendChild(searchForm);
+  actionsSection.appendChild(cartLink);
+  container.appendChild(actionsSection);
+
+  mainNav.appendChild(container);
+  return mainNav;
+}
+
+/**
+ * loads and decorates the header with Luma-style layout
  * @param {Element} block The header block element
  */
 export default async function decorate(block) {
-  // load nav as fragment
-  const navMeta = getMetadata('nav');
-  const navPath = navMeta ? new URL(navMeta, window.location).pathname : '/nav';
-  const fragment = await loadFragment(navPath);
-
-  // decorate nav DOM
+  // Clear block content
   block.textContent = '';
-  const nav = document.createElement('nav');
-  nav.id = 'nav';
-  while (fragment.firstElementChild) nav.append(fragment.firstElementChild);
 
-  const classes = ['brand', 'sections', 'tools'];
-  classes.forEach((c, i) => {
-    const section = nav.children[i];
-    if (section) section.classList.add(`nav-${c}`);
-  });
-
-  const navBrand = nav.querySelector('.nav-brand');
-  const brandLink = navBrand.querySelector('.button');
-  if (brandLink) {
-    brandLink.className = '';
-    brandLink.closest('.button-container').className = '';
-  }
-
-  const navSections = nav.querySelector('.nav-sections');
-  if (navSections) {
-    navSections.querySelectorAll(':scope .default-content-wrapper > ul > li').forEach((navSection) => {
-      if (navSection.querySelector('ul')) navSection.classList.add('nav-drop');
-      navSection.addEventListener('click', () => {
-        if (isDesktop.matches) {
-          const expanded = navSection.getAttribute('aria-expanded') === 'true';
-          toggleAllNavSections(navSections);
-          navSection.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-        }
-      });
-    });
-  }
-
-  // hamburger for mobile
-  const hamburger = document.createElement('div');
-  hamburger.classList.add('nav-hamburger');
-  hamburger.innerHTML = `<button type="button" aria-controls="nav" aria-label="Open navigation">
-      <span class="nav-hamburger-icon"></span>
-    </button>`;
-  hamburger.addEventListener('click', () => toggleMenu(nav, navSections));
-  nav.prepend(hamburger);
-  nav.setAttribute('aria-expanded', 'false');
-  // prevent mobile nav behavior on window resize
-  toggleMenu(nav, navSections, isDesktop.matches);
-  isDesktop.addEventListener('change', () => toggleMenu(nav, navSections, isDesktop.matches));
-
-  const navWrapper = document.createElement('div');
-  navWrapper.className = 'nav-wrapper';
-  navWrapper.append(nav);
-
-  block.append(buildHeaderTop(), navWrapper);
+  // Build the complete header structure
+  block.append(buildHeaderTop(), buildLumaMainNav());
 }
