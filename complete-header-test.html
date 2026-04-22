@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Complete Luma-Style Header Structure</title>
+  <style>
+    /* Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+    }
+
+    /* ========== HEADER TOP CSS ========== */
+    .headertop-wrapper {
+      background-color: #1a1a2e;
+      color: #fff;
+      width: 100%;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .headertop {
+      background-color: #1a1a2e;
+      width: 100%;
+      padding: 8px 0;
+    }
+
+    .header-top-inner {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      gap: 16px;
+    }
+
+    /* Disclaimer (LEFT) */
+    .header-top-disclaimer {
+      display: flex;
+      align-items: center;
+      order: 0;
+    }
+
+    .header-top-disclaimer-text {
+      font-size: 12px;
+      color: #f4a261;
+      font-style: italic;
+    }
+
+    /* Sign In (RIGHT) */
+    .header-top-signin {
+      display: flex;
+      align-items: center;
+      order: 1;
+    }
+
+    .header-top-signin-btn {
+      display: inline-block;
+      padding: 4px 16px;
+      background-color: #e63946;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      white-space: nowrap;
+    }
+
+    .header-top-signin-btn:hover {
+      background-color: #c1121f;
+      transform: translateY(-1px);
+    }
+
+    /* ========== HEADER MAIN CSS ========== */
+    .headermain {
+      width: 100%;
+      border-bottom: 1px solid #e0e0e0;
+      background-color: #fff;
+    }
+
+    .headermain-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0.75rem 1rem;
+      gap: 2rem;
+    }
+
+    /* Logo Section */
+    .headermain-logo {
+      flex-shrink: 0;
+    }
+
+    .headermain-logo a {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .headermain-logo img {
+      height: 40px;
+      width: auto;
+      max-width: 120px;
+      object-fit: contain;
+    }
+
+    .headermain-logo .logo-text {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #333;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Navigation */
+    .headermain-nav {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+    }
+
+    .headermain-nav-list {
+      display: flex;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      gap: 2rem;
+    }
+
+    .headermain-nav-list li {
+      margin: 0;
+    }
+
+    .headermain-nav-link {
+      display: block;
+      padding: 0.5rem 0;
+      text-decoration: none;
+      color: #333;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: color 0.3s ease;
+      position: relative;
+    }
+
+    .headermain-nav-link:hover {
+      color: #ff5722;
+    }
+
+    .headermain-nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: #ff5722;
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .headermain-nav-link:hover::after {
+      transform: scaleX(1);
+    }
+
+    /* Actions Section */
+    .headermain-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+
+    /* Search */
+    .headermain-search {
+      display: flex;
+      align-items: center;
+      background-color: #f8f9fa;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .headermain-search-input {
+      border: none;
+      background: transparent;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      outline: none;
+      width: 200px;
+    }
+
+    .headermain-search-input::placeholder {
+      color: #999;
+    }
+
+    .headermain-search-button {
+      border: none;
+      background: transparent;
+      padding: 0.5rem;
+      cursor: pointer;
+      font-size: 1rem;
+      color: #666;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .headermain-search-button:hover {
+      background-color: #e9ecef;
+    }
+
+    /* Cart */
+    .headermain-cart {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: #333;
+      position: relative;
+      padding: 0.5rem;
+      border-radius: 4px;
+      transition: background-color 0.3s ease;
+    }
+
+    .headermain-cart:hover {
+      background-color: #f8f9fa;
+    }
+
+    .headermain-cart-icon {
+      font-size: 1.25rem;
+      margin-right: 0.25rem;
+    }
+
+    .headermain-cart-count {
+      background-color: #ff5722;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 0.25rem 0.5rem;
+      border-radius: 50px;
+      min-width: 1.25rem;
+      text-align: center;
+      line-height: 1;
+    }
+
+    /* ========== MAIN CONTENT ========== */
+    .main-content {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .demo-section {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .demo-product {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      background: #f9f9f9;
+    }
+
+    .highlight {
+      background-color: #e8f5e8;
+      padding: 1rem;
+      border-radius: 4px;
+      border-left: 4px solid #28a745;
+      margin: 1rem 0;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .header-top-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 8px 16px;
+        gap: 6px;
+      }
+
+      .headermain-container {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        padding: 0.5rem 1rem;
+      }
+
+      .headermain-logo {
+        order: 1;
+      }
+
+      .headermain-actions {
+        order: 2;
+        margin-left: auto;
+      }
+
+      .headermain-nav {
+        order: 3;
+        flex-basis: 100%;
+        justify-content: center;
+        margin-top: 0.5rem;
+      }
+
+      .headermain-nav-list {
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .headermain-nav-link {
+        font-size: 0.8rem;
+        padding: 0.25rem 0;
+      }
+
+      .headermain-search-input {
+        width: 120px;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER TOP (Topmost thin bar) -->
+  <div class="headertop-wrapper">
+    <div class="headertop" id="headerTopBlock">
+      <!-- This will be populated by JavaScript -->
+    </div>
+  </div>
+
+  <!-- HEADER MAIN (Main navigation bar) -->
+  <div class="headermain" id="headerMainBlock">
+    <!-- This will be populated by JavaScript -->
+  </div>
+  
+  <!-- MAIN CONTENT (Product area) -->
+  <main class="main-content">
+    <div class="demo-section">
+      <h1>✅ Complete Header Structure - Luma Style</h1>
+      
+      <div class="highlight">
+        <strong>🎯 Correct Layout Order Implemented:</strong><br>
+        1️⃣ <strong>HeaderTop</strong> → Disclaimer + Sign In<br>
+        2️⃣ <strong>HeaderMain</strong> → Logo + Navigation + Search + Cart<br>
+        3️⃣ <strong>Main Content</strong> → Products/Content Area
+      </div>
+
+      <h2>📋 Components Status:</h2>
+      <ul style="text-align: left; margin: 1rem 0;">
+        <li>✅ <strong>HeaderTop:</strong> Dark bar with disclaimer and sign-in button</li>
+        <li>✅ <strong>HeaderMain:</strong> White bar with logo, navigation, search, and cart</li>
+        <li>✅ <strong>Navigation Links:</strong> MEN and WOMEN connect to live pages</li>
+        <li>✅ <strong>Responsive Design:</strong> Adapts to mobile screens</li>
+        <li>✅ <strong>Hover Effects:</strong> Orange underlines and button interactions</li>
+      </ul>
+
+      <p><strong>🔗 Test Navigation:</strong></p>
+      <ul style="text-align: left; margin: 1rem 0;">
+        <li>MEN → <a href="https://main--acc-commerce-mock--ezhilre.aem.live/men" target="_blank">Live Men's Section</a></li>
+        <li>WOMEN → <a href="https://main--acc-commerce-mock--ezhilre.aem.live/women" target="_blank">Live Women's Section</a></li>
+      </ul>
+    </div>
+
+    <div class="demo-section">
+      <h2>📦 Sample Product Area</h2>
+      <p>This area would contain your product listings, hero sections, etc.</p>
+      
+      <div class="demo-grid">
+        <div class="demo-product">
+          <h3>Product 1</h3>
+          <p>Sample product description</p>
+        </div>
+        <div class="demo-product">
+          <h3>Product 2</h3>
+          <p>Sample product description</p>
+        </div>
+        <div class="demo-product">
+          <h3>Product 3</h3>
+          <p>Sample product description</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // HeaderTop decoration function
+    function decorateHeaderTop(block) {
+      block.textContent = '';
+      
+      const headerTop = document.createElement('div');
+      headerTop.classList.add('header-top-inner');
+
+      // Disclaimer section (LEFT)
+      const disclaimerSection = document.createElement('div');
+      disclaimerSection.classList.add('header-top-disclaimer');
+
+      const disclaimerText = document.createElement('span');
+      disclaimerText.classList.add('header-top-disclaimer-text');
+      disclaimerText.textContent = 'This is a demo website used to teach Adobe Experience Platform Data Collection';
+
+      disclaimerSection.append(disclaimerText);
+
+      // Sign In section (RIGHT)
+      const signInSection = document.createElement('div');
+      signInSection.classList.add('header-top-signin');
+
+      const signInBtn = document.createElement('a');
+      signInBtn.classList.add('header-top-signin-btn');
+      signInBtn.href = '/signin';
+      signInBtn.textContent = 'Sign In';
+      signInBtn.setAttribute('aria-label', 'Sign In to your account');
+
+      signInSection.append(signInBtn);
+
+      headerTop.append(disclaimerSection, signInSection);
+      block.append(headerTop);
+    }
+
+    // HeaderMain decoration function
+    function decorateHeaderMain(block) {
+      block.textContent = '';
+      
+      const headerMainContainer = document.createElement('div');
+      headerMainContainer.classList.add('headermain-container');
+
+      // Logo section
+      const logoSection = document.createElement('div');
+      logoSection.classList.add('headermain-logo');
+      
+      const logoLink = document.createElement('a');
+      logoLink.href = '/';
+      logoLink.setAttribute('aria-label', 'Home');
+      
+      const logoText = document.createElement('span');
+      logoText.classList.add('logo-text');
+      logoText.textContent = 'LUMA';
+      logoLink.appendChild(logoText);
+      
+      logoSection.appendChild(logoLink);
+      headerMainContainer.appendChild(logoSection);
+
+      // Navigation section
+      const navSection = document.createElement('nav');
+      navSection.classList.add('headermain-nav');
+      
+      const navList = document.createElement('ul');
+      navList.classList.add('headermain-nav-list');
+      
+      const navItems = [
+        { text: 'WHAT\'S NEW', href: '/whats-new' },
+        { text: 'WOMEN', href: 'https://main--acc-commerce-mock--ezhilre.aem.live/women' },
+        { text: 'MEN', href: 'https://main--acc-commerce-mock--ezhilre.aem.live/men' },
+        { text: 'GEAR', href: '/gear' },
+        { text: 'TRAINING', href: '/training' },
+        { text: 'SALE', href: '/sale' }
+      ];
+      
+      navItems.forEach(item => {
+        const listItem = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = item.href;
+        link.textContent = item.text;
+        link.classList.add('headermain-nav-link');
+        listItem.appendChild(link);
+        navList.appendChild(listItem);
+      });
+      
+      navSection.appendChild(navList);
+      headerMainContainer.appendChild(navSection);
+
+      // Actions section (search + cart)
+      const actionsSection = document.createElement('div');
+      actionsSection.classList.add('headermain-actions');
+      
+      // Search
+      const searchForm = document.createElement('form');
+      searchForm.classList.add('headermain-search');
+      searchForm.setAttribute('role', 'search');
+      
+      const searchInput = document.createElement('input');
+      searchInput.type = 'search';
+      searchInput.placeholder = 'Search entire store here...';
+      searchInput.classList.add('headermain-search-input');
+      searchInput.setAttribute('aria-label', 'Search products');
+      
+      const searchButton = document.createElement('button');
+      searchButton.type = 'submit';
+      searchButton.classList.add('headermain-search-button');
+      searchButton.setAttribute('aria-label', 'Search');
+      searchButton.innerHTML = '🔍';
+      
+      searchForm.appendChild(searchInput);
+      searchForm.appendChild(searchButton);
+      
+      // Cart
+      const cartLink = document.createElement('a');
+      cartLink.href = '/cart';
+      cartLink.classList.add('headermain-cart');
+      cartLink.setAttribute('aria-label', 'Shopping cart');
+      
+      const cartIcon = document.createElement('span');
+      cartIcon.classList.add('headermain-cart-icon');
+      cartIcon.innerHTML = '🛒';
+      
+      const cartCount = document.createElement('span');
+      cartCount.classList.add('headermain-cart-count');
+      cartCount.textContent = '0';
+      
+      cartLink.appendChild(cartIcon);
+      cartLink.appendChild(cartCount);
+      
+      actionsSection.appendChild(searchForm);
+      actionsSection.appendChild(cartLink);
+      headerMainContainer.appendChild(actionsSection);
+
+      block.appendChild(headerMainContainer);
+    }
+
+    // Initialize both headers on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const headerTopBlock = document.getElementById('headerTopBlock');
+      const headerMainBlock = document.getElementById('headerMainBlock');
+      
+      decorateHeaderTop(headerTopBlock);
+      decorateHeaderMain(headerMainBlock);
+    });
+  </script>
+</body>
+</html>
