@@ -20,9 +20,22 @@ const MODAL_ID = 'auth-modal-overlay';
 let _firebaseApp = null;
 let _auth = null;
 let _db = null;
+let _createUserWithEmailAndPassword = null;
+let _signInWithEmailAndPassword = null;
+let _doc = null;
+let _setDoc = null;
 
 async function getFirebaseServices() {
-  if (_auth && _db) return { auth: _auth, db: _db };
+  if (_auth && _db) {
+    return {
+      auth: _auth,
+      db: _db,
+      createUserWithEmailAndPassword: _createUserWithEmailAndPassword,
+      signInWithEmailAndPassword: _signInWithEmailAndPassword,
+      doc: _doc,
+      setDoc: _setDoc,
+    };
+  }
 
   const { initializeApp, getApps } = await import(`${FIREBASE_SDK_BASE}/firebase-app.js`);
   const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = await import(
@@ -33,6 +46,10 @@ async function getFirebaseServices() {
   _firebaseApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
   _auth = getAuth(_firebaseApp);
   _db = getFirestore(_firebaseApp);
+  _createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+  _signInWithEmailAndPassword = signInWithEmailAndPassword;
+  _doc = doc;
+  _setDoc = setDoc;
 
   return {
     auth: _auth,
@@ -201,37 +218,49 @@ function buildCreateAccountPanel() {
     submit.disabled = true;
     submit.textContent = 'Creating account…';
 
-    let success = false;
     try {
       const { auth, db, createUserWithEmailAndPassword, doc, setDoc } = await getFirebaseServices();
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const customerId = generateCustomerId();
 
-      await setDoc(doc(db, 'users', customerId), {
-        customerId,
-        uid: userCredential.user.uid,
-        firstName,
-        lastName,
-        email,
-        createdAt: new Date(),
-      });
+      // Store to Firestore — don't let a Firestore hang block the success UI
+      const firestoreTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('firestore-timeout')), 5000),
+      );
+      await Promise.race([
+        setDoc(doc(db, 'users', customerId), {
+          customerId,
+          uid: userCredential.user.uid,
+          firstName,
+          lastName,
+          email,
+          createdAt: new Date(),
+        }),
+        firestoreTimeout,
+      ]);
 
-      success = true;
-
-      // ✅ Success message with full name
+      // ✅ Success — restore button first, then show message and close
+      submit.disabled = false;
+      submit.textContent = 'Create Account';
       showStatus(
         form,
         `${firstName} ${lastName}, your account is created and you may log in now.`,
         'success',
       );
+      form.reset();
+      setTimeout(() => closeModal(), 2500);
     } catch (err) {
       console.error('[AuthModal] Create account error:', err);
-      showStatus(form, friendlyError(err.code), 'error');
-    } finally {
       submit.disabled = false;
       submit.textContent = 'Create Account';
-      if (success) {
+      const message =
+        err.message === 'firestore-timeout'
+          ? `${firstName} ${lastName}, your account is created and you may log in now.`
+          : friendlyError(err.code);
+      const type = err.message === 'firestore-timeout' ? 'success' : 'error';
+      showStatus(form, message, type);
+      if (err.message === 'firestore-timeout') {
         form.reset();
         setTimeout(() => closeModal(), 2500);
       }
