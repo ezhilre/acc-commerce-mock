@@ -222,25 +222,8 @@ function buildCreateAccountPanel() {
       const { auth, db, createUserWithEmailAndPassword, doc, setDoc } = await getFirebaseServices();
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const customerId = generateCustomerId();
 
-      // Store to Firestore — don't let a Firestore hang block the success UI
-      const firestoreTimeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('firestore-timeout')), 5000),
-      );
-      await Promise.race([
-        setDoc(doc(db, 'users', customerId), {
-          customerId,
-          uid: userCredential.user.uid,
-          firstName,
-          lastName,
-          email,
-          createdAt: new Date(),
-        }),
-        firestoreTimeout,
-      ]);
-
-      // ✅ Success — restore button first, then show message and close
+      // ✅ Auth succeeded — show success immediately, restore button, reset form
       submit.disabled = false;
       submit.textContent = 'Create Account';
       showStatus(
@@ -249,21 +232,24 @@ function buildCreateAccountPanel() {
         'success',
       );
       form.reset();
-      setTimeout(() => closeModal(), 2500);
+
+      // Save to Firestore in the background — does not block the UI
+      const customerId = generateCustomerId();
+      setDoc(doc(db, 'users', customerId), {
+        customerId,
+        uid: userCredential.user.uid,
+        firstName,
+        lastName,
+        email,
+        createdAt: new Date(),
+      }).catch((firestoreErr) => {
+        console.error('[AuthModal] Firestore write error:', firestoreErr);
+      });
     } catch (err) {
       console.error('[AuthModal] Create account error:', err);
       submit.disabled = false;
       submit.textContent = 'Create Account';
-      const message =
-        err.message === 'firestore-timeout'
-          ? `${firstName} ${lastName}, your account is created and you may log in now.`
-          : friendlyError(err.code);
-      const type = err.message === 'firestore-timeout' ? 'success' : 'error';
-      showStatus(form, message, type);
-      if (err.message === 'firestore-timeout') {
-        form.reset();
-        setTimeout(() => closeModal(), 2500);
-      }
+      showStatus(form, friendlyError(err.code), 'error');
     }
   });
 
