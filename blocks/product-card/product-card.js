@@ -38,7 +38,7 @@ export default function decorate(block) {
   
   // Create product card HTML structure
   productCard.innerHTML = `
-    <div class="product-card">
+    <div class="product-card-inner">
       <div class="product-image-container">
         <img src="${productData.image || ''}" alt="${productData.imageAlt || 'Product'}" class="product-image" loading="lazy">
       </div>
