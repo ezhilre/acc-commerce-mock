@@ -201,6 +201,7 @@ function buildCreateAccountPanel() {
     submit.disabled = true;
     submit.textContent = 'Creating account…';
 
+    let success = false;
     try {
       const { auth, db, createUserWithEmailAndPassword, doc, setDoc } = await getFirebaseServices();
 
@@ -216,19 +217,24 @@ function buildCreateAccountPanel() {
         createdAt: new Date(),
       });
 
+      success = true;
+
       // ✅ Success message with full name
       showStatus(
         form,
         `${firstName} ${lastName}, your account is created and you may log in now.`,
         'success',
       );
-      form.reset();
     } catch (err) {
       console.error('[AuthModal] Create account error:', err);
       showStatus(form, friendlyError(err.code), 'error');
     } finally {
       submit.disabled = false;
       submit.textContent = 'Create Account';
+      if (success) {
+        form.reset();
+        setTimeout(() => closeModal(), 2500);
+      }
     }
   });
 
