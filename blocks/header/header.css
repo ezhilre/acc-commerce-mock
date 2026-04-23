@@ -384,12 +384,11 @@ header .luma-logo a {
   color: inherit;
 }
 
-header .luma-logo-text {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #333;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+header .luma-logo-img {
+  display: block;
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
 }
 
 /* Luma Navigation */
@@ -584,8 +583,9 @@ header .luma-cart-count {
     padding: 0.5rem;
   }
 
-  header .luma-logo-text {
-    font-size: 1.25rem;
+  header .luma-logo-img {
+    width: 60px;
+    height: 60px;
   }
 
   header .luma-nav-list {

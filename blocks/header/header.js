@@ -165,10 +165,35 @@ function buildLumaMainNav() {
   logoLink.href = '/';
   logoLink.setAttribute('aria-label', 'Home');
   
-  const logoText = document.createElement('span');
-  logoText.classList.add('luma-logo-text');
-  logoText.textContent = 'BETA COMMERCE';
-  logoLink.appendChild(logoText);
+  const picture = document.createElement('picture');
+
+  const sourceWebpDesktop = document.createElement('source');
+  sourceWebpDesktop.type = 'image/webp';
+  sourceWebpDesktop.srcset = './media_17f794629ab97a4e51b64872cd21db81c627a5c28.jpg?width=2000&format=webply&optimize=medium';
+  sourceWebpDesktop.media = '(min-width: 600px)';
+
+  const sourceWebpMobile = document.createElement('source');
+  sourceWebpMobile.type = 'image/webp';
+  sourceWebpMobile.srcset = './media_17f794629ab97a4e51b64872cd21db81c627a5c28.jpg?width=750&format=webply&optimize=medium';
+
+  const sourceJpegDesktop = document.createElement('source');
+  sourceJpegDesktop.type = 'image/jpeg';
+  sourceJpegDesktop.srcset = './media_17f794629ab97a4e51b64872cd21db81c627a5c28.jpg?width=2000&format=jpg&optimize=medium';
+  sourceJpegDesktop.media = '(min-width: 600px)';
+
+  const logoImg = document.createElement('img');
+  logoImg.loading = 'lazy';
+  logoImg.alt = 'Beta Commerce Logo';
+  logoImg.src = './media_17f794629ab97a4e51b64872cd21db81c627a5c28.jpg?width=750&format=jpg&optimize=medium';
+  logoImg.width = 120;
+  logoImg.height = 120;
+  logoImg.classList.add('luma-logo-img');
+
+  picture.appendChild(sourceWebpDesktop);
+  picture.appendChild(sourceWebpMobile);
+  picture.appendChild(sourceJpegDesktop);
+  picture.appendChild(logoImg);
+  logoLink.appendChild(picture);
   
   logoSection.appendChild(logoLink);
   container.appendChild(logoSection);
