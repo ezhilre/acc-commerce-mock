@@ -406,7 +406,38 @@
     </div>
   </main>
 
-  <script>
+  <script type="module">
+    import { openModal, closeModal, signOutUser, subscribeAuthState } from './blocks/auth-modal/auth-modal.js';
+
+    // Global auth state
+    let currentUser = null;
+
+    // Update header button based on auth state
+    function updateAuthButton(user) {
+      currentUser = user;
+      const btn = document.getElementById('auth-action-btn');
+      const userInfo = document.getElementById('user-info');
+      if (!btn) return;
+
+      if (user) {
+        btn.textContent = 'Sign Out';
+        btn.setAttribute('aria-label', 'Sign out of your account');
+        btn.onclick = () => signOutUser();
+        if (userInfo) {
+          userInfo.textContent = user.email;
+          userInfo.style.display = 'inline';
+        }
+      } else {
+        btn.textContent = 'Sign In';
+        btn.setAttribute('aria-label', 'Sign in to your account');
+        btn.onclick = () => openModal('signin');
+        if (userInfo) {
+          userInfo.textContent = '';
+          userInfo.style.display = 'none';
+        }
+      }
+    }
+
     // HeaderTop decoration function
     function decorateHeaderTop(block) {
       block.textContent = '';
@@ -424,20 +455,32 @@
 
       disclaimerSection.append(disclaimerText);
 
-      // Sign In section (RIGHT)
+      // Auth section (RIGHT)
       const signInSection = document.createElement('div');
       signInSection.classList.add('header-top-signin');
 
-      const signInBtn = document.createElement('a');
-      signInBtn.classList.add('header-top-signin-btn');
-      signInBtn.href = '/signin';
-      signInBtn.textContent = 'Sign In';
-      signInBtn.setAttribute('aria-label', 'Sign In to your account');
+      // Logged-in user email display
+      const userInfo = document.createElement('span');
+      userInfo.id = 'user-info';
+      userInfo.style.cssText = 'color:#f4a261; font-size:12px; margin-right:10px; display:none;';
 
-      signInSection.append(signInBtn);
+      const signInBtn = document.createElement('button');
+      signInBtn.classList.add('header-top-signin-btn');
+      signInBtn.id = 'auth-action-btn';
+      signInBtn.textContent = 'Sign In';
+      signInBtn.setAttribute('aria-label', 'Sign in to your account');
+      signInBtn.onclick = () => openModal('signin');
+
+      signInSection.append(userInfo, signInBtn);
 
       headerTop.append(disclaimerSection, signInSection);
       block.append(headerTop);
+
+      // Subscribe to Firebase auth state changes
+      subscribeAuthState((user) => updateAuthButton(user));
+
+      // Also listen for the custom event dispatched by the modal
+      window.addEventListener('authStateChanged', (e) => updateAuthButton(e.detail.user));
     }
 
     // HeaderMain decoration function
@@ -549,5 +592,8 @@
       decorateHeaderMain(headerMainBlock);
     });
   </script>
+
+  <!-- Auth Modal CSS -->
+  <link rel="stylesheet" href="blocks/auth-modal/auth-modal.css" />
 </body>
 </html>

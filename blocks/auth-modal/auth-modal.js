@@ -22,6 +22,8 @@ let _auth = null;
 let _db = null;
 let _createUserWithEmailAndPassword = null;
 let _signInWithEmailAndPassword = null;
+let _signOut = null;
+let _onAuthStateChanged = null;
 let _doc = null;
 let _setDoc = null;
 
@@ -32,15 +34,21 @@ async function getFirebaseServices() {
       db: _db,
       createUserWithEmailAndPassword: _createUserWithEmailAndPassword,
       signInWithEmailAndPassword: _signInWithEmailAndPassword,
+      signOut: _signOut,
+      onAuthStateChanged: _onAuthStateChanged,
       doc: _doc,
       setDoc: _setDoc,
     };
   }
 
   const { initializeApp, getApps } = await import(`${FIREBASE_SDK_BASE}/firebase-app.js`);
-  const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = await import(
-    `${FIREBASE_SDK_BASE}/firebase-auth.js`
-  );
+  const {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+  } = await import(`${FIREBASE_SDK_BASE}/firebase-auth.js`);
   const { getFirestore, doc, setDoc } = await import(`${FIREBASE_SDK_BASE}/firebase-firestore.js`);
 
   _firebaseApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
@@ -48,6 +56,8 @@ async function getFirebaseServices() {
   _db = getFirestore(_firebaseApp);
   _createUserWithEmailAndPassword = createUserWithEmailAndPassword;
   _signInWithEmailAndPassword = signInWithEmailAndPassword;
+  _signOut = signOut;
+  _onAuthStateChanged = onAuthStateChanged;
   _doc = doc;
   _setDoc = setDoc;
 
@@ -56,6 +66,8 @@ async function getFirebaseServices() {
     db: _db,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
     doc,
     setDoc,
   };
@@ -151,9 +163,14 @@ function buildSignInPanel() {
 
     try {
       const { auth, signInWithEmailAndPassword } = await getFirebaseServices();
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       showStatus(form, 'Welcome back! You are now signed in.', 'success');
       form.reset();
+      // Close modal after short delay and dispatch auth event
+      setTimeout(() => {
+        closeModal();
+        window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user: userCredential.user } }));
+      }, 1000);
     } catch (err) {
       console.error('[AuthModal] Sign-in error:', err);
       showStatus(form, friendlyError(err.code), 'error');
@@ -409,9 +426,33 @@ function closeModal() {
   }
 }
 
+// ── Sign Out ─────────────────────────────────────────────────────────────────
+
+async function signOutUser() {
+  try {
+    const { auth, signOut } = await getFirebaseServices();
+    await signOut(auth);
+    window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user: null } }));
+  } catch (err) {
+    console.error('[AuthModal] Sign-out error:', err);
+  }
+}
+
+// ── Subscribe to auth state changes ──────────────────────────────────────────
+
+async function subscribeAuthState(callback) {
+  const { auth, onAuthStateChanged } = await getFirebaseServices();
+  return onAuthStateChanged(auth, callback);
+}
+
 // ── Public API ───────────────────────────────────────────────────────────────
 
-window.AuthModal = { open: openModal, close: closeModal };
+window.AuthModal = {
+  open: openModal,
+  close: closeModal,
+  signOut: signOutUser,
+  subscribeAuthState,
+};
 
 // ── Block decorate (AEM EDS entry point) ─────────────────────────────────────
 
@@ -420,4 +461,6 @@ export default function decorate(block) {
   ensureModal();
 }
 
-export { openModal, closeModal };
+export {
+  openModal, closeModal, signOutUser, subscribeAuthState,
+};
