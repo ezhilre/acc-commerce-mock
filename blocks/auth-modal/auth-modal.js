@@ -73,6 +73,37 @@ async function getFirebaseServices() {
   };
 }
 
+// ── Cookie helpers ────────────────────────────────────────────────────────────
+
+const AUTH_COOKIE_NAME = 'auth_user';
+
+function setAuthCookie(user) {
+  const data = {
+    uid: user.uid,
+    email: user.email,
+    emailVerified: user.emailVerified,
+  };
+  // Session cookie (expires when browser closes); add Max-Age for persistence
+  document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(data))}; path=/; SameSite=Strict`;
+}
+
+function clearAuthCookie() {
+  document.cookie = `${AUTH_COOKIE_NAME}=; path=/; Max-Age=0; SameSite=Strict`;
+}
+
+function getAuthCookie() {
+  const match = document.cookie
+    .split(';')
+    .map((c) => c.trim())
+    .find((c) => c.startsWith(`${AUTH_COOKIE_NAME}=`));
+  if (!match) return null;
+  try {
+    return JSON.parse(decodeURIComponent(match.split('=').slice(1).join('=')));
+  } catch {
+    return null;
+  }
+}
+
 // ── Helper: generate customer ID ─────────────────────────────────────────────
 
 function generateCustomerId() {
@@ -164,13 +195,11 @@ function buildSignInPanel() {
     try {
       const { auth, signInWithEmailAndPassword } = await getFirebaseServices();
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      showStatus(form, 'Welcome back! You are now signed in.', 'success');
       form.reset();
-      // Close modal after short delay and dispatch auth event
-      setTimeout(() => {
-        closeModal();
-        window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user: userCredential.user } }));
-      }, 1000);
+      // Set auth cookie and close modal immediately
+      setAuthCookie(userCredential.user);
+      closeModal();
+      window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user: userCredential.user } }));
     } catch (err) {
       console.error('[AuthModal] Sign-in error:', err);
       showStatus(form, friendlyError(err.code), 'error');
@@ -432,6 +461,7 @@ async function signOutUser() {
   try {
     const { auth, signOut } = await getFirebaseServices();
     await signOut(auth);
+    clearAuthCookie();
     window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user: null } }));
   } catch (err) {
     console.error('[AuthModal] Sign-out error:', err);
@@ -452,6 +482,7 @@ window.AuthModal = {
   close: closeModal,
   signOut: signOutUser,
   subscribeAuthState,
+  getAuthCookie,
 };
 
 // ── Block decorate (AEM EDS entry point) ─────────────────────────────────────
@@ -462,5 +493,5 @@ export default function decorate(block) {
 }
 
 export {
-  openModal, closeModal, signOutUser, subscribeAuthState,
+  openModal, closeModal, signOutUser, subscribeAuthState, getAuthCookie,
 };

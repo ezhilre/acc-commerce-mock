@@ -407,7 +407,7 @@
   </main>
 
   <script type="module">
-    import { openModal, closeModal, signOutUser, subscribeAuthState } from './blocks/auth-modal/auth-modal.js';
+    import { openModal, closeModal, signOutUser, subscribeAuthState, getAuthCookie } from './blocks/auth-modal/auth-modal.js';
 
     // Global auth state
     let currentUser = null;
@@ -476,10 +476,18 @@
       headerTop.append(disclaimerSection, signInSection);
       block.append(headerTop);
 
-      // Subscribe to Firebase auth state changes
-      subscribeAuthState((user) => updateAuthButton(user));
+      // Immediately apply cookie-based auth state (before Firebase resolves)
+      const cookieUser = getAuthCookie();
+      if (cookieUser) updateAuthButton(cookieUser);
 
-      // Also listen for the custom event dispatched by the modal
+      // Subscribe to Firebase auth state changes
+      subscribeAuthState((user) => {
+        updateAuthButton(user);
+        // Clear cookie if Firebase says logged out
+        if (!user) document.cookie = 'auth_user=; path=/; Max-Age=0; SameSite=Strict';
+      });
+
+      // Also listen for the custom event dispatched by the modal (sign-in/sign-out)
       window.addEventListener('authStateChanged', (e) => updateAuthButton(e.detail.user));
     }
 

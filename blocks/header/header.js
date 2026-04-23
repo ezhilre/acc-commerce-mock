@@ -1,6 +1,6 @@
 import { getMetadata } from '../../scripts/aem.js';
 import { loadFragment } from '../fragment/fragment.js';
-import { openModal } from '../auth-modal/auth-modal.js';
+import { openModal, signOutUser, subscribeAuthState, getAuthCookie } from '../auth-modal/auth-modal.js';
 
 // media query match that indicates mobile/tablet width
 const isDesktop = window.matchMedia('(min-width: 900px)');
@@ -109,6 +109,147 @@ function toggleMenu(nav, navSections, forceExpanded = null) {
   }
 }
 
+// ── Logged-off toast ────────────────────────────────────────────────────────
+
+function showLoggedOffToast() {
+  let toast = document.getElementById('loggedoff-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'loggedoff-toast';
+    toast.style.cssText = `
+      position:fixed; top:60px; right:24px; z-index:9999;
+      background:#1a1a2e; color:#fff; padding:12px 24px;
+      border-radius:6px; font-size:14px; font-weight:600;
+      box-shadow:0 4px 12px rgba(0,0,0,0.3);
+      opacity:0; transition:opacity 0.3s ease;
+      pointer-events:none;
+    `;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = '👋 You have been logged off successfully.';
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+}
+
+// ── My Account panel ────────────────────────────────────────────────────────
+
+function showMyAccountPanel(user) {
+  let panel = document.getElementById('my-account-panel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'my-account-panel';
+    panel.style.cssText = `
+      position:fixed; top:0; right:0; width:320px; height:100vh;
+      background:#fff; z-index:10000; box-shadow:-4px 0 20px rgba(0,0,0,0.2);
+      padding:32px 24px; transform:translateX(100%);
+      transition:transform 0.3s ease; overflow-y:auto;
+    `;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.cssText = `
+      position:absolute; top:16px; right:16px;
+      background:none; border:none; font-size:24px;
+      cursor:pointer; color:#666; line-height:1;
+    `;
+    closeBtn.addEventListener('click', () => {
+      panel.style.transform = 'translateX(100%)';
+    });
+
+    const title = document.createElement('h2');
+    title.id = 'my-account-title';
+    title.style.cssText = 'font-size:1.25rem; font-weight:700; color:#1a1a2e; margin-bottom:24px; border-bottom:2px solid #ff5722; padding-bottom:8px;';
+    title.textContent = 'My Account';
+
+    const content = document.createElement('div');
+    content.id = 'my-account-content';
+    content.style.cssText = 'display:flex; flex-direction:column; gap:12px;';
+
+    panel.append(closeBtn, title, content);
+    document.body.appendChild(panel);
+
+    // Close on backdrop click (outside panel)
+    document.addEventListener('click', (e) => {
+      if (!panel.contains(e.target) && !e.target.closest('#my-account-link')) {
+        panel.style.transform = 'translateX(100%)';
+      }
+    });
+  }
+
+  // Populate with user info
+  const content = panel.querySelector('#my-account-content');
+  content.innerHTML = '';
+
+  function row(label, value) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'background:#f8f9fa; border-radius:6px; padding:12px 16px;';
+    wrap.innerHTML = `<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${label}</div>
+      <div style="font-size:14px;font-weight:600;color:#1a1a2e;word-break:break-all;">${value}</div>`;
+    return wrap;
+  }
+
+  content.append(
+    row('Email', user.email || '—'),
+    row('User ID', user.uid ? `${user.uid.substring(0, 12)}…` : '—'),
+    row('Account Created', user.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'),
+    row('Last Sign In', user.metadata?.lastSignInTime ? new Date(user.metadata.lastSignInTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'),
+    row('Email Verified', user.emailVerified ? '✅ Yes' : '❌ No'),
+  );
+
+  panel.style.transform = 'translateX(0)';
+}
+
+// ── Auth state update ────────────────────────────────────────────────────────
+
+function updateHeaderAuth(user) {
+  const signInSection = document.querySelector('.header-top-signin');
+  if (!signInSection) return;
+
+  signInSection.innerHTML = '';
+
+  if (user) {
+    // Show email
+    const userEmail = document.createElement('span');
+    userEmail.style.cssText = 'color:#f4a261; font-size:12px; margin-right:10px;';
+    userEmail.textContent = user.email;
+
+    // My Account link
+    const myAccountLink = document.createElement('button');
+    myAccountLink.id = 'my-account-link';
+    myAccountLink.classList.add('header-top-signin-btn');
+    myAccountLink.style.cssText = 'background:#f4a261; margin-right:8px;';
+    myAccountLink.textContent = 'My Account';
+    myAccountLink.setAttribute('aria-label', 'My Account');
+    myAccountLink.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showMyAccountPanel(user);
+    });
+
+    // Sign Out button
+    const signOutBtn = document.createElement('button');
+    signOutBtn.classList.add('header-top-signin-btn');
+    signOutBtn.textContent = 'Sign Out';
+    signOutBtn.setAttribute('aria-label', 'Sign out of your account');
+    signOutBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      await signOutUser();
+    });
+
+    signInSection.append(userEmail, myAccountLink, signOutBtn);
+  } else {
+    // Sign In button
+    const signInBtn = document.createElement('button');
+    signInBtn.classList.add('header-top-signin-btn');
+    signInBtn.textContent = 'Sign In';
+    signInBtn.setAttribute('aria-label', 'Sign In to your account');
+    signInBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openModal('signin');
+    });
+    signInSection.append(signInBtn);
+  }
+}
+
 /**
  * Builds and returns the header-top bar (Disclaimer left, Sign In right)
  * @returns {HTMLElement}
@@ -130,7 +271,7 @@ function buildHeaderTop() {
 
   disclaimerSection.append(disclaimerText);
 
-  // Sign In section (RIGHT)
+  // Auth section (RIGHT) — starts with Sign In, updated by Firebase auth state
   const signInSection = document.createElement('div');
   signInSection.classList.add('header-top-signin');
 
@@ -147,6 +288,30 @@ function buildHeaderTop() {
 
   inner.append(disclaimerSection, signInSection);
   headerTop.append(inner);
+
+  // Immediately apply cookie-based auth state so the header is correct before Firebase resolves
+  const cookieUser = getAuthCookie();
+  if (cookieUser) {
+    updateHeaderAuth(cookieUser);
+  }
+
+  // Subscribe to Firebase auth state — updates header when Firebase resolves
+  subscribeAuthState((user) => {
+    updateHeaderAuth(user);
+    // Keep cookie in sync: clear it if Firebase says no user
+    if (!user) {
+      document.cookie = 'auth_user=; path=/; Max-Age=0; SameSite=Strict';
+    }
+  });
+
+  // Listen for custom authStateChanged events (sign-in / sign-out dispatched manually)
+  window.addEventListener('authStateChanged', (e) => {
+    if (!e.detail.user) {
+      showLoggedOffToast();
+    }
+    updateHeaderAuth(e.detail.user);
+  });
+
   return headerTop;
 }
 
