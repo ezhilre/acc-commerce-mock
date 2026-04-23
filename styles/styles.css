@@ -144,13 +144,13 @@ pre {
 
 main > div {
   margin: 40px 16px;
-  margin-top: 160px; /* Account for fixed header height (top bar + main nav) */
+  margin-top: 200px; /* Account for fixed header height (top bar ~34px + main nav ~88px + buffer) */
 }
 
 /* Adjust spacing for desktop when header is relative positioned */
 @media (width >= 900px) {
   main > div {
-    margin-top: 40px;
+    margin-top: 60px;
   }
 }
 

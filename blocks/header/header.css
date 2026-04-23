@@ -384,11 +384,15 @@ header .luma-logo a {
   color: inherit;
 }
 
-header .luma-logo-img {
+header .luma-logo-svg {
+  display: flex;
+  align-items: center;
+}
+
+header .luma-logo-svg svg {
   display: block;
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
+  width: 200px;
+  height: 60px;
 }
 
 /* Luma Navigation */
@@ -583,9 +587,9 @@ header .luma-cart-count {
     padding: 0.5rem;
   }
 
-  header .luma-logo-img {
-    width: 60px;
-    height: 60px;
+  header .luma-logo-svg svg {
+    width: 160px;
+    height: 48px;
   }
 
   header .luma-nav-list {

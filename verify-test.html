@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Header + Product Cards Verify</title>
+  <link rel="stylesheet" href="styles/styles.css">
+  <link rel="stylesheet" href="blocks/header/header.css">
+  <link rel="stylesheet" href="blocks/product-card/product-card.css">
+  <style>
+    body { display: block; margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; }
+    header { height: auto; position: sticky; top: 0; z-index: 100; }
+    .products-section {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 0 32px;
+    }
+    .products-section h2 {
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      color: #333;
+    }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .products-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .products-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header block" data-block-name="header" data-block-status=""></div>
+  </header>
+
+  <main>
+    <div class="products-section">
+      <h2>Product Cards</h2>
+      <div class="products-grid">
+
+        <div class="product-card block" data-block-name="product-card">
+          <table>
+            <tr><td>Category</td><td>Men</td></tr>
+            <tr><td>Product Name</td><td>Cotton Solid Regular Fit Polo</td></tr>
+            <tr><td>Product Image</td><td><img src="https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=400&h=400&fit=crop" alt="Blue Polo Shirt"></td></tr>
+            <tr><td>Product Cost</td><td>$49.99</td></tr>
+          </table>
+        </div>
+
+        <div class="product-card block" data-block-name="product-card">
+          <table>
+            <tr><td>Category</td><td>Men</td></tr>
+            <tr><td>Product Name</td><td>Aether Gym Performance Pant</td></tr>
+            <tr><td>Product Image</td><td><img src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&h=400&fit=crop" alt="Gym Pant"></td></tr>
+            <tr><td>Product Cost</td><td>$59.20</td></tr>
+          </table>
+        </div>
+
+        <div class="product-card block" data-block-name="product-card">
+          <table>
+            <tr><td>Category</td><td>Women</td></tr>
+            <tr><td>Product Name</td><td>Cronus Yoga Stretch Pant</td></tr>
+            <tr><td>Product Image</td><td><img src="https://images.unsplash.com/photo-1506629905607-cc7c5ee65db5?w=400&h=400&fit=crop" alt="Yoga Pant"></td></tr>
+            <tr><td>Product Cost</td><td>$38.40</td></tr>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import decorate from './blocks/header/header.js';
+    import decorateProductCard from './blocks/product-card/product-card.js';
+
+    // Decorate header
+    const headerBlock = document.querySelector('.header.block');
+    if (headerBlock) {
+      headerBlock.dataset.blockStatus = 'loading';
+      await decorate(headerBlock);
+      headerBlock.dataset.blockStatus = 'loaded';
+    }
+
+    // Decorate product cards
+    document.querySelectorAll('.product-card.block').forEach(block => {
+      decorateProductCard(block);
+    });
+  </script>
+</body>
+</html>

@@ -165,35 +165,23 @@ function buildLumaMainNav() {
   logoLink.href = '/';
   logoLink.setAttribute('aria-label', 'Home');
   
-  const picture = document.createElement('picture');
-
-  const sourceWebpDesktop = document.createElement('source');
-  sourceWebpDesktop.type = 'image/webp';
-  sourceWebpDesktop.srcset = './media_17f794629ab97a4e51b64872cd21db81c627a5c28.jpg?width=2000&format=webply&optimize=medium';
-  sourceWebpDesktop.media = '(min-width: 600px)';
-
-  const sourceWebpMobile = document.createElement('source');
-  sourceWebpMobile.type = 'image/webp';
-  sourceWebpMobile.srcset = './media_17f794629ab97a4e51b64872cd21db81c627a5c28.jpg?width=750&format=webply&optimize=medium';
-
-  const sourceJpegDesktop = document.createElement('source');
-  sourceJpegDesktop.type = 'image/jpeg';
-  sourceJpegDesktop.srcset = './media_17f794629ab97a4e51b64872cd21db81c627a5c28.jpg?width=2000&format=jpg&optimize=medium';
-  sourceJpegDesktop.media = '(min-width: 600px)';
-
-  const logoImg = document.createElement('img');
-  logoImg.loading = 'lazy';
-  logoImg.alt = 'Beta Commerce Logo';
-  logoImg.src = './media_17f794629ab97a4e51b64872cd21db81c627a5c28.jpg?width=750&format=jpg&optimize=medium';
-  logoImg.width = 120;
-  logoImg.height = 120;
-  logoImg.classList.add('luma-logo-img');
-
-  picture.appendChild(sourceWebpDesktop);
-  picture.appendChild(sourceWebpMobile);
-  picture.appendChild(sourceJpegDesktop);
-  picture.appendChild(logoImg);
-  logoLink.appendChild(picture);
+  const logoSvgWrapper = document.createElement('div');
+  logoSvgWrapper.classList.add('luma-logo-svg');
+  logoSvgWrapper.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60" role="img" aria-label="Beta Commerce">
+      <!-- Shopping bag icon -->
+      <g transform="translate(4, 4)">
+        <rect x="2" y="16" width="28" height="26" rx="3" ry="3" fill="#ff5722" />
+        <path d="M8 16 C8 9 24 9 24 16" fill="none" stroke="#ff5722" stroke-width="3" stroke-linecap="round"/>
+        <line x1="11" y1="24" x2="21" y2="24" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <line x1="16" y1="19" x2="16" y2="29" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      <!-- Brand name -->
+      <text x="46" y="28" font-family="Arial, sans-serif" font-size="16" font-weight="800" fill="#1a1a2e" letter-spacing="1">BETA</text>
+      <text x="46" y="48" font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="#ff5722" letter-spacing="2">COMMERCE</text>
+    </svg>
+  `;
+  logoLink.appendChild(logoSvgWrapper);
   
   logoSection.appendChild(logoLink);
   container.appendChild(logoSection);
