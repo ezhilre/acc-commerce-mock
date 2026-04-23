@@ -1,5 +1,6 @@
 import { getMetadata } from '../../scripts/aem.js';
 import { loadFragment } from '../fragment/fragment.js';
+import { openModal } from '../auth-modal/auth-modal.js';
 
 // media query match that indicates mobile/tablet width
 const isDesktop = window.matchMedia('(min-width: 900px)');
@@ -133,11 +134,14 @@ function buildHeaderTop() {
   const signInSection = document.createElement('div');
   signInSection.classList.add('header-top-signin');
 
-  const signInBtn = document.createElement('a');
+  const signInBtn = document.createElement('button');
   signInBtn.classList.add('header-top-signin-btn');
-  signInBtn.href = '/signin';
   signInBtn.textContent = 'Sign In';
   signInBtn.setAttribute('aria-label', 'Sign In to your account');
+  signInBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    openModal('signin');
+  });
 
   signInSection.append(signInBtn);
 

@@ -1,0 +1,210 @@
+/* ── Auth Modal Overlay ───────────────────────────────── */
+.auth-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-modal-overlay.is-open {
+  display: flex;
+}
+
+/* ── Modal Container ─────────────────────────────────── */
+.auth-modal {
+  background: #fff;
+  border-radius: 4px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  animation: auth-modal-in 0.2s ease;
+}
+
+@keyframes auth-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Close Button ────────────────────────────────────── */
+.auth-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #757575;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  z-index: 1;
+}
+
+.auth-modal-close:hover {
+  color: #333;
+  background-color: #f5f5f5;
+}
+
+/* ── Tab Bar ─────────────────────────────────────────── */
+.auth-modal-tabs {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 0 24px;
+  padding-right: 48px; /* leave space for close button */
+}
+
+.auth-modal-tab {
+  position: relative;
+  padding: 18px 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #757575;
+  cursor: pointer;
+  background: none;
+  border: none;
+  outline: none;
+  transition: color 0.2s ease;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.auth-modal-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #e07b39;
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+.auth-modal-tab.is-active {
+  color: #e07b39;
+}
+
+.auth-modal-tab.is-active::after {
+  transform: scaleX(1);
+}
+
+.auth-modal-tab:hover:not(.is-active) {
+  color: #333;
+}
+
+/* ── Panel ───────────────────────────────────────────── */
+.auth-modal-panel {
+  display: none;
+  padding: 32px 40px 40px;
+}
+
+.auth-modal-panel.is-active {
+  display: block;
+}
+
+.auth-modal-panel h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 28px;
+  line-height: 1.2;
+}
+
+/* ── Form Fields ─────────────────────────────────────── */
+.auth-modal-field {
+  margin-bottom: 20px;
+}
+
+.auth-modal-field label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.auth-modal-field input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid #c2c2c2;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  color: #333;
+  background-color: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.auth-modal-field input:focus {
+  border-color: #e07b39;
+  box-shadow: 0 0 0 2px rgba(224, 123, 57, 0.15);
+}
+
+/* ── Submit Button ───────────────────────────────────── */
+.auth-modal-submit {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  margin-top: 8px;
+  background-color: #e07b39;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.auth-modal-submit:hover {
+  background-color: #c9611e;
+}
+
+.auth-modal-submit:active {
+  transform: scale(0.99);
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 600px) {
+  .auth-modal {
+    max-width: 100%;
+    min-height: 100dvh;
+    border-radius: 0;
+    max-height: 100dvh;
+  }
+
+  .auth-modal-overlay {
+    align-items: flex-end;
+  }
+
+  .auth-modal-panel {
+    padding: 24px 20px 32px;
+  }
+
+  .auth-modal-tabs {
+    padding: 0 16px;
+    padding-right: 40px;
+  }
+
+  .auth-modal-tab {
+    padding: 16px 16px;
+  }
+}
