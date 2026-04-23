@@ -1,8 +1,6 @@
 /* Product Card Container */
 .product-card-container {
   width: 100%;
-  max-width: 300px;
-  margin: 0 auto;
 }
 
 .product-card {
@@ -12,7 +10,7 @@
   overflow: hidden;
   transition: all 0.3s ease;
   cursor: pointer;
-  height: 400px;
+  min-height: 450px;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -49,11 +47,11 @@
 /* Product Info */
 .product-info {
   padding: 16px;
-  height: 160px;
+  min-height: 180px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  flex-shrink: 0;
+  gap: 12px;
+  flex-grow: 1;
 }
 
 .product-name {
@@ -128,35 +126,30 @@
   padding: 20px 0;
   max-width: 1200px;
   margin: 0 auto;
-  justify-items: center;
 }
 
 .section.product-card-container .product-card-container {
-  max-width: none;
   width: 100%;
 }
 
 /* Multiple Product Cards Grid - 3 Column Layout */
 .product-cards-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
-  justify-items: center;
 }
 
 .product-cards-grid .product-card-container {
-  max-width: none;
   width: 100%;
 }
 
 /* Main container centering for single product cards */
-main .section .product-card-container {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+main .section .product-card-container:only-child {
+  max-width: 300px;
+  margin: 0 auto;
 }
 
 /* Add to Cart Button Styles */
@@ -172,7 +165,7 @@ main .section .product-card-container {
   transition: all 0.3s ease;
   margin-top: auto;
   width: 100%;
-  height: 44px;
+  min-height: 44px;
   font-family: var(--body-font-family);
   flex-shrink: 0;
 }
