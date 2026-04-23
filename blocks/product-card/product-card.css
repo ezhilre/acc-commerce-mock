@@ -1,44 +1,49 @@
-/* Product Card Block - Grid Layout */
+/* Product Card Block - Grid Layout
+ * EDS runtime structure after decorateSections():
+ *   main > div.section > div(wrapper) > div.product-card.block
+ * Each block gets its own wrapper div inside the section.
+ */
 
-/* When multiple product-card blocks are in the same section,
-   apply a 3-column grid to the section wrapper div */
-.section > div:has(> .product-card) {
+/* Make the section a 3-column grid when it contains product-card blocks */
+.section:has(> div > .product-card) {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px 24px;
+  padding: 20px 32px;
+  box-sizing: border-box;
 }
 
-@media (width >= 900px) {
-  .section > div:has(> .product-card) {
-    padding: 20px 32px;
-  }
+/* Non-product-card wrappers (headertop, headermain, etc.) span all columns */
+.section:has(> div > .product-card) > div:not(:has(> .product-card)) {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 900px) {
-  .section > div:has(> .product-card) {
+  .section:has(> div > .product-card) {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
+    padding: 16px 24px;
   }
 }
 
 @media (max-width: 600px) {
-  .section > div:has(> .product-card) {
+  .section:has(> div > .product-card) {
     grid-template-columns: 1fr;
     gap: 16px;
+    padding: 16px;
   }
 }
 
-/* Each block wrapper inside the grid cell */
+/* Product-card block and its container fill the grid cell */
 .product-card {
   display: flex;
   flex-direction: column;
   width: 100%;
+  height: 100%;
 }
 
-/* Product Card Container */
 .product-card-container {
   width: 100%;
   height: 100%;
@@ -46,7 +51,7 @@
   flex-direction: column;
 }
 
-/* Card itself — fixed height with flex layout so button stays visible */
+/* Card inner — flex column keeps button pinned to bottom */
 .product-card-inner {
   background: #fff;
   border: 1px solid #e6e6e6;
@@ -56,7 +61,7 @@
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
   min-height: 420px;
 }
 
@@ -88,7 +93,7 @@
   transform: scale(1.05);
 }
 
-/* Product Info */
+/* Product Info — grows to push button to bottom */
 .product-info {
   padding: 16px;
   display: flex;
@@ -121,7 +126,7 @@
   margin: 0;
 }
 
-/* Add to Cart Button — pushed to bottom with margin-top: auto */
+/* Add to Cart Button — pushed to bottom via margin-top: auto */
 .add-to-cart-btn {
   background: #ff6600;
   color: white;
@@ -138,6 +143,7 @@
   font-family: var(--body-font-family);
   flex-shrink: 0;
   display: block;
+  box-sizing: border-box;
 }
 
 .add-to-cart-btn:hover {
@@ -168,7 +174,7 @@
   100% { background-position: -200% 0; }
 }
 
-/* Focus States for Accessibility */
+/* Accessibility */
 .product-card-inner:focus-visible {
   outline: 2px solid #ff6600;
   outline-offset: 2px;
