@@ -267,7 +267,7 @@ function buildHeaderTop() {
 
   const disclaimerText = document.createElement('span');
   disclaimerText.classList.add('header-top-disclaimer-text');
-  disclaimerText.textContent = 'This is a demo website used to teach Adobe Experience Platform Data Collection';
+  disclaimerText.textContent = 'This is a just a demo website for Adobe Commerce and does not process any real orders.';
 
   disclaimerSection.append(disclaimerText);
 
