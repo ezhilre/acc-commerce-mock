@@ -16,3 +16,11 @@ export const firebaseConfig = {
 
 /** Firebase SDK CDN base URL (version-pinned) */
 export const FIREBASE_SDK_BASE = 'https://www.gstatic.com/firebasejs/10.12.2';
+
+// ── Kafka / AWS API Gateway config ────────────────────────────────────────────
+
+/** AWS API Gateway base URL for the Kafka REST Proxy */
+export const KAFKA_REST_PROXY_BASE = 'https://i3wygncpai.execute-api.eu-west-1.amazonaws.com/prod';
+
+/** Kafka topic name for beta-commerce signup events */
+export const KAFKA_SIGNUP_TOPIC = 'beta-commerce-signup-events';

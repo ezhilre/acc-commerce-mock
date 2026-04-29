@@ -11,9 +11,104 @@
  *   AuthModal.close()      – close the modal
  */
 
-import { firebaseConfig, FIREBASE_SDK_BASE } from '../../scripts/firebase-config.js';
+import {
+  firebaseConfig,
+  FIREBASE_SDK_BASE,
+  KAFKA_REST_PROXY_BASE,
+  KAFKA_SIGNUP_TOPIC,
+} from '../../scripts/firebase-config.js';
 
 const MODAL_ID = 'auth-modal-overlay';
+
+// ── Kafka / AWS API Gateway config ────────────────────────────────────────────
+// Base URL and topic are defined in scripts/firebase-config.js
+
+/** Full REST Proxy endpoint: POST to this URL to publish a record to the topic */
+const KAFKA_REST_PROXY_URL = `${KAFKA_REST_PROXY_BASE}/topics/${KAFKA_SIGNUP_TOPIC}`;
+
+// ── Kafka helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Generate a purely-numeric customer ID (16 digits) that fits the
+ * {{RANDOM_UUID_ONLY_NUMBER}} placeholder requirement.
+ */
+function generateNumericCustomerId() {
+  // Combine two Date.now() values with random padding to get a 16-digit number
+  const ts = Date.now().toString(); // 13 digits
+  const rand = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0'); // 3 digits
+  return ts + rand; // 16 digits
+}
+
+/**
+ * Build and publish the BETA_COMMERCE_USER_SIGNUP event to Kafka
+ * via the AWS API Gateway REST Proxy.
+ *
+ * @param {{email:string, firstName:string, lastName:string, phone?:string, uid:string}} userData
+ * @returns {Promise<void>}
+ */
+async function publishSignupEventToKafka(userData) {
+  const eventPayload = {
+    eventType: 'BETA_COMMERCE_USER_SIGNUP',
+    timestamp: new Date().toISOString(),
+    _id: crypto.randomUUID(),
+    SOURCE: 'BETA_COMMERCE',
+    user: {
+      customerId: generateNumericCustomerId(),
+      email: userData.email,
+      phone: userData.phone || '',
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      isEmailVerified: true,
+    },
+  };
+
+  // ── Kafka REST Proxy expects this envelope format ──────────────────────────
+  // POST /topics/<topic>  with Content-Type: application/vnd.kafka.json.v2+json
+  const kafkaEnvelope = {
+    records: [
+      {
+        value: eventPayload,
+      },
+    ],
+  };
+
+  console.group('[AuthModal] 🚀 Publishing signup event to Kafka');
+  console.log('Topic  :', 'BETA_COMMERCE_USER_SIGNUP');
+  console.log('Endpoint:', KAFKA_REST_PROXY_URL);
+  console.log('Payload JSON:', JSON.stringify(eventPayload, null, 2));
+  console.groupEnd();
+
+  try {
+    const response = await fetch(KAFKA_REST_PROXY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/vnd.kafka.json.v2+json',
+        Accept: 'application/vnd.kafka.v2+json',
+      },
+      body: JSON.stringify(kafkaEnvelope),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `[AuthModal] ❌ Kafka publish failed — HTTP ${response.status}:`,
+        errorText,
+      );
+      return;
+    }
+
+    const result = await response.json().catch(() => ({}));
+    console.group('[AuthModal] ✅ Kafka publish succeeded');
+    console.log('HTTP Status :', response.status);
+    console.log('Response    :', result);
+    console.log('Event sent  :', JSON.stringify(eventPayload, null, 2));
+    console.groupEnd();
+  } catch (networkErr) {
+    console.error('[AuthModal] ❌ Kafka publish – network error:', networkErr);
+  }
+}
 
 // ── Firebase singleton ───────────────────────────────────────────────────────
 
@@ -268,6 +363,17 @@ function buildCreateAccountPanel() {
       const { auth, db, createUserWithEmailAndPassword, doc, setDoc } = await getFirebaseServices();
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const { user } = userCredential;
+
+      // ── ✅ Firebase Auth success – log details to console ─────────────────
+      console.group('[AuthModal] ✅ Firebase signup succeeded');
+      console.log('UID            :', user.uid);
+      console.log('Email          :', user.email);
+      console.log('Email Verified :', user.emailVerified);
+      console.log('Display Name   :', user.displayName);
+      console.log('Created At     :', user.metadata?.creationTime);
+      console.log('Firebase User  :', user);
+      console.groupEnd();
 
       // ✅ Auth succeeded — show success immediately, restore button, reset form
       submit.disabled = false;
@@ -279,17 +385,26 @@ function buildCreateAccountPanel() {
       );
       form.reset();
 
-      // Save to Firestore in the background — does not block the UI
+      // ── Save to Firestore in the background (non-blocking) ────────────────
       const customerId = generateCustomerId();
       setDoc(doc(db, 'users', customerId), {
         customerId,
-        uid: userCredential.user.uid,
+        uid: user.uid,
         firstName,
         lastName,
         email,
         createdAt: new Date(),
       }).catch((firestoreErr) => {
         console.error('[AuthModal] Firestore write error:', firestoreErr);
+      });
+
+      // ── Publish signup event to Kafka via AWS API Gateway (non-blocking) ──
+      publishSignupEventToKafka({
+        uid: user.uid,
+        email,
+        firstName,
+        lastName,
+        phone: '', // phone field not collected in this form; extend makeField if needed
       });
     } catch (err) {
       console.error('[AuthModal] Create account error:', err);
