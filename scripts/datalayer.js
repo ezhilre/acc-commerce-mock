@@ -176,11 +176,39 @@ function pushAddToCart(item) {
   console.groupEnd();
 }
 
+// ── Cart clear helper ─────────────────────────────────────────────────────────
+
+/**
+ * Empty digitalData.cart.items and push a CART_CLEAR event.
+ * Called directly or via the 'clearCart' CustomEvent.
+ */
+function clearCart() {
+  const clearedItems = [...window.digitalData.cart.items];
+  window.digitalData.cart.items = [];
+
+  const eventObj = {
+    eventId: crypto.randomUUID(),
+    eventType: 'CART_CLEAR',
+    source: 'BETA_COMMERCE',
+    clearedItems,
+    cart: {
+      totalItems: 0,
+      items: [],
+    },
+    user: { ...window.digitalData.user },
+  };
+
+  pushEvent(eventObj);
+
+  console.log('[digitalData] 🗑️ Cart cleared. Items removed:', clearedItems.length);
+}
+
 // ── Attach public API ─────────────────────────────────────────────────────────
 
 window.digitalData.setUser = setUser;
 window.digitalData.clearUser = clearUser;
 window.digitalData.pushAddToCart = pushAddToCart;
+window.digitalData.clearCart = clearCart;
 window.digitalData.push = pushEvent;
 
 // ── Listen for global events from other blocks ────────────────────────────────
@@ -215,6 +243,17 @@ window.addEventListener('authStateChanged', (e) => {
 // NOTE: The 'addToCart' CustomEvent listener is intentionally omitted here.
 // product-card.js calls window.digitalData.pushAddToCart() directly before
 // dispatching the event, so listening here would cause a duplicate entry.
+
+/**
+ * Any UI component can dispatch:
+ *   document.dispatchEvent(new CustomEvent('clearCart', { bubbles: true }))
+ * or
+ *   window.dispatchEvent(new CustomEvent('clearCart'))
+ * and the datalayer will empty the cart and push a CART_CLEAR event.
+ */
+window.addEventListener('clearCart', () => {
+  clearCart();
+});
 
 // ── Hydrate from auth cookie on page load ─────────────────────────────────────
 /**
