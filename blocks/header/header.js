@@ -250,6 +250,203 @@ function updateHeaderAuth(user) {
   }
 }
 
+// ── Cart Management ──────────────────────────────────────────────────────────
+
+const CART_STORAGE_KEY = 'acc_commerce_cart';
+
+function getCart() {
+  try {
+    return JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveCart(cart) {
+  localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+}
+
+function addItemToCart(item) {
+  const cart = getCart();
+  const existing = cart.find((i) => i.sku === item.sku);
+  if (existing) {
+    existing.quantity += 1;
+  } else {
+    cart.push({ ...item, quantity: 1 });
+  }
+  saveCart(cart);
+  return cart;
+}
+
+function removeItemFromCart(sku) {
+  const cart = getCart().filter((i) => i.sku !== sku);
+  saveCart(cart);
+  return cart;
+}
+
+function getTotalItemCount(cart) {
+  return cart.reduce((sum, i) => sum + i.quantity, 0);
+}
+
+function updateCartBadge(cart) {
+  const badge = document.querySelector('.luma-cart-count');
+  if (badge) {
+    const count = getTotalItemCount(cart);
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'inline-flex' : 'inline-flex';
+  }
+}
+
+// ── Cart Panel ───────────────────────────────────────────────────────────────
+
+function renderCartPanel() {
+  const cart = getCart();
+  let panel = document.getElementById('cart-panel');
+
+  if (!panel) {
+    // Overlay backdrop
+    const backdrop = document.createElement('div');
+    backdrop.id = 'cart-backdrop';
+    backdrop.style.cssText = `
+      position:fixed; inset:0; background:rgba(0,0,0,0.4);
+      z-index:10001; display:none; opacity:0;
+      transition:opacity 0.3s ease;
+    `;
+    backdrop.addEventListener('click', closeCartPanel);
+    document.body.appendChild(backdrop);
+
+    panel = document.createElement('div');
+    panel.id = 'cart-panel';
+    panel.setAttribute('aria-label', 'Shopping cart');
+    panel.setAttribute('role', 'dialog');
+    panel.innerHTML = `
+      <div class="cart-panel-header">
+        <h2 class="cart-panel-title">🛒 Shopping Cart</h2>
+        <button class="cart-panel-close" aria-label="Close cart">&times;</button>
+      </div>
+      <div class="cart-panel-body" id="cart-panel-body"></div>
+      <div class="cart-panel-footer" id="cart-panel-footer"></div>
+    `;
+    document.body.appendChild(panel);
+
+    panel.querySelector('.cart-panel-close').addEventListener('click', closeCartPanel);
+  }
+
+  // Render items
+  const body = panel.querySelector('#cart-panel-body');
+  const footer = panel.querySelector('#cart-panel-footer');
+  body.innerHTML = '';
+  footer.innerHTML = '';
+
+  if (cart.length === 0) {
+    body.innerHTML = '<div class="cart-empty"><span>🛍️</span><p>Your cart is empty</p></div>';
+  } else {
+    cart.forEach((item) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'cart-item';
+      itemEl.innerHTML = `
+        <div class="cart-item-img">
+          ${item.image ? `<img src="${item.image}" alt="${item.name}" loading="lazy">` : '<div class="cart-item-img-placeholder">📦</div>'}
+        </div>
+        <div class="cart-item-info">
+          <div class="cart-item-name">${item.name}</div>
+          <div class="cart-item-sku">SKU: ${item.sku}</div>
+          <div class="cart-item-price">₹${item.price} × ${item.quantity}</div>
+        </div>
+        <div class="cart-item-actions">
+          <div class="cart-item-qty">
+            <span class="cart-item-total">₹${(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
+            <span class="cart-item-count-badge">${item.quantity}</span>
+          </div>
+          <button class="cart-item-remove" data-sku="${item.sku}" aria-label="Remove ${item.name} from cart">✕</button>
+        </div>
+      `;
+      body.appendChild(itemEl);
+    });
+
+    // Wire up remove buttons
+    body.querySelectorAll('.cart-item-remove').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const updatedCart = removeItemFromCart(btn.dataset.sku);
+        updateCartBadge(updatedCart);
+        renderCartPanel();
+        openCartPanel();
+      });
+    });
+
+    // Footer total
+    const total = cart.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0);
+    footer.innerHTML = `
+      <div class="cart-summary">
+        <div class="cart-summary-row">
+          <span>Items (${getTotalItemCount(cart)})</span>
+          <span>₹${total.toFixed(2)}</span>
+        </div>
+      </div>
+      <button class="cart-checkout-btn" type="button">Proceed to Checkout</button>
+      <button class="cart-clear-btn" type="button">Clear Cart</button>
+    `;
+    footer.querySelector('.cart-checkout-btn').addEventListener('click', () => {
+      alert('Checkout functionality coming soon!');
+    });
+    footer.querySelector('.cart-clear-btn').addEventListener('click', () => {
+      saveCart([]);
+      updateCartBadge([]);
+      renderCartPanel();
+      openCartPanel();
+    });
+  }
+}
+
+function openCartPanel() {
+  renderCartPanel();
+  const panel = document.getElementById('cart-panel');
+  const backdrop = document.getElementById('cart-backdrop');
+  if (panel) {
+    panel.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  if (backdrop) {
+    backdrop.style.display = 'block';
+    // Force reflow for transition
+    // eslint-disable-next-line no-unused-expressions
+    backdrop.offsetHeight;
+    backdrop.style.opacity = '1';
+  }
+}
+
+function closeCartPanel() {
+  const panel = document.getElementById('cart-panel');
+  const backdrop = document.getElementById('cart-backdrop');
+  if (panel) {
+    panel.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  if (backdrop) {
+    backdrop.style.opacity = '0';
+    setTimeout(() => { backdrop.style.display = 'none'; }, 300);
+  }
+}
+
+// ── Global add-to-cart listener ──────────────────────────────────────────────
+
+function initCartListener() {
+  document.addEventListener('addToCart', (e) => {
+    const cart = addItemToCart(e.detail);
+    updateCartBadge(cart);
+
+    // Brief "bounce" animation on cart icon
+    const cartBtn = document.querySelector('.luma-cart');
+    if (cartBtn) {
+      cartBtn.classList.add('cart-bounce');
+      setTimeout(() => cartBtn.classList.remove('cart-bounce'), 400);
+    }
+  });
+
+  // Restore badge from persisted cart on page load
+  updateCartBadge(getCart());
+}
+
 /**
  * Builds and returns the header-top bar (Disclaimer left, Sign In right)
  * @returns {HTMLElement}
@@ -329,11 +526,11 @@ function buildLumaMainNav() {
   // Logo section
   const logoSection = document.createElement('div');
   logoSection.classList.add('luma-logo');
-  
+
   const logoLink = document.createElement('a');
   logoLink.href = '/';
   logoLink.setAttribute('aria-label', 'Home');
-  
+
   const logoSvgWrapper = document.createElement('div');
   logoSvgWrapper.classList.add('luma-logo-svg');
   logoSvgWrapper.innerHTML = `
@@ -351,27 +548,27 @@ function buildLumaMainNav() {
     </svg>
   `;
   logoLink.appendChild(logoSvgWrapper);
-  
+
   logoSection.appendChild(logoLink);
   container.appendChild(logoSection);
 
   // Navigation section
   const navSection = document.createElement('nav');
   navSection.classList.add('luma-nav');
-  
+
   const navList = document.createElement('ul');
   navList.classList.add('luma-nav-list');
-  
+
   const navItems = [
     { text: 'WHAT\'S NEW', href: '/whats-new' },
     { text: 'WOMEN', href: 'https://main--acc-commerce-mock--ezhilre.aem.live/women' },
     { text: 'MEN', href: 'https://main--acc-commerce-mock--ezhilre.aem.live/men' },
     { text: 'GEAR', href: '/gear' },
     { text: 'TRAINING', href: '/training' },
-    { text: 'SALE', href: '/sale' }
+    { text: 'SALE', href: '/sale' },
   ];
-  
-  navItems.forEach(item => {
+
+  navItems.forEach((item) => {
     const listItem = document.createElement('li');
     const link = document.createElement('a');
     link.href = item.href;
@@ -380,53 +577,60 @@ function buildLumaMainNav() {
     listItem.appendChild(link);
     navList.appendChild(listItem);
   });
-  
+
   navSection.appendChild(navList);
   container.appendChild(navSection);
 
   // Actions section (search + cart)
   const actionsSection = document.createElement('div');
   actionsSection.classList.add('luma-actions');
-  
+
   // Search
   const searchForm = document.createElement('form');
   searchForm.classList.add('luma-search');
   searchForm.setAttribute('role', 'search');
-  
+
   const searchInput = document.createElement('input');
   searchInput.type = 'search';
   searchInput.placeholder = 'Search entire store here...';
   searchInput.classList.add('luma-search-input');
   searchInput.setAttribute('aria-label', 'Search products');
-  
+
   const searchButton = document.createElement('button');
   searchButton.type = 'submit';
   searchButton.classList.add('luma-search-button');
   searchButton.setAttribute('aria-label', 'Search');
   searchButton.innerHTML = '🔍';
-  
+
   searchForm.appendChild(searchInput);
   searchForm.appendChild(searchButton);
-  
-  // Cart
-  const cartLink = document.createElement('a');
-  cartLink.href = '/cart';
-  cartLink.classList.add('luma-cart');
-  cartLink.setAttribute('aria-label', 'Shopping cart');
-  
+
+  // Cart — now a button that opens the cart panel
+  const cartBtn = document.createElement('button');
+  cartBtn.type = 'button';
+  cartBtn.classList.add('luma-cart');
+  cartBtn.setAttribute('aria-label', 'Shopping cart');
+
   const cartIcon = document.createElement('span');
   cartIcon.classList.add('luma-cart-icon');
   cartIcon.innerHTML = '🛒';
-  
+
   const cartCount = document.createElement('span');
   cartCount.classList.add('luma-cart-count');
-  cartCount.textContent = '0';
-  
-  cartLink.appendChild(cartIcon);
-  cartLink.appendChild(cartCount);
-  
+  const initialCount = getTotalItemCount(getCart());
+  cartCount.textContent = initialCount;
+
+  cartBtn.appendChild(cartIcon);
+  cartBtn.appendChild(cartCount);
+
+  cartBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openCartPanel();
+  });
+
   actionsSection.appendChild(searchForm);
-  actionsSection.appendChild(cartLink);
+  actionsSection.appendChild(cartBtn);
   container.appendChild(actionsSection);
 
   mainNav.appendChild(container);
@@ -443,4 +647,7 @@ export default async function decorate(block) {
 
   // Build the complete header structure
   block.append(buildHeaderTop(), buildLumaMainNav());
+
+  // Initialise cart listener (after DOM is ready)
+  initCartListener();
 }

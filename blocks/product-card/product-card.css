@@ -126,6 +126,14 @@
   margin: 0;
 }
 
+.product-sku {
+  font-family: monospace;
+  font-size: 11px;
+  color: #999;
+  letter-spacing: 0.3px;
+  margin: 0;
+}
+
 /* Add to Cart Button — pushed to bottom via margin-top: auto */
 .add-to-cart-btn {
   background: #ff6600;
