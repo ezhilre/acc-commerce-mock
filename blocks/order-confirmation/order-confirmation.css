@@ -1,0 +1,362 @@
+.order-confirmation {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 16px 80px;
+}
+
+.order-confirmation-wrapper {
+  font-family: var(--body-font-family, roboto, sans-serif);
+}
+
+/* ── Hero ── */
+.order-confirmation-hero {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 40px 24px 32px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.order-confirmation-icon-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  border: 3px solid #a5d6a7;
+}
+
+.no-order .order-confirmation-icon-circle {
+  background: #fff3e0;
+  color: #e65100;
+  border-color: #ffcc80;
+}
+
+.order-confirmation-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #2e7d32;
+  margin: 0 0 8px;
+}
+
+.no-order .order-confirmation-title {
+  color: #e65100;
+}
+
+.order-confirmation-subtitle {
+  font-size: 1rem;
+  color: #555;
+  margin: 0 0 20px;
+}
+
+.order-id-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0f4ff;
+  border: 1px solid #c5d0f5;
+  border-radius: 24px;
+  padding: 8px 20px;
+  margin-bottom: 8px;
+}
+
+.order-id-label {
+  font-size: 0.85rem;
+  color: #555;
+  font-weight: 600;
+}
+
+.order-id-value {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #3b63fb;
+  letter-spacing: 0.5px;
+}
+
+.order-date {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 4px;
+}
+
+/* ── Details grid ── */
+.order-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.order-detail-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+
+.order-detail-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.order-detail-icon {
+  font-size: 1.1rem;
+}
+
+.order-detail-heading {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #888;
+}
+
+.order-detail-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.5;
+}
+
+.order-detail-sub {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.delivery-days {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2e7d32;
+}
+
+.payment-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.payment-card-icon {
+  font-size: 1.4rem;
+}
+
+.payment-card-type {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.payment-card-last4 {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* ── Order items ── */
+.order-items-section {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.order-items-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #888;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.order-item-img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.order-item-img-placeholder {
+  width: 56px;
+  height: 56px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  border: 1px solid #e0e0e0;
+}
+
+.order-item-details {
+  flex: 1;
+}
+
+.order-item-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #131313;
+  margin-bottom: 2px;
+}
+
+.order-item-sku,
+.order-item-qty {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.order-item-price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #131313;
+  flex-shrink: 0;
+}
+
+.order-no-items {
+  font-size: 0.9rem;
+  color: #888;
+  margin: 0;
+  padding: 12px 0;
+}
+
+.order-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  margin-top: 8px;
+  border-top: 2px solid #f0f0f0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #131313;
+}
+
+.order-total-amount {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #3b63fb;
+}
+
+/* ── Next steps ── */
+.order-next-steps {
+  background: #f0f4ff;
+  border: 1px solid #c5d0f5;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.order-next-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #3b63fb;
+  margin: 0 0 14px;
+}
+
+.order-next-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-next-list li {
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.5;
+}
+
+/* ── Actions ── */
+.order-confirmation-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.order-continue-btn {
+  display: inline-block;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  font-family: inherit;
+  border: none;
+}
+
+.order-continue-btn.primary {
+  background: #3b63fb;
+  color: #fff;
+}
+
+.order-continue-btn.primary:hover {
+  background: #1d3ecf;
+  text-decoration: none;
+}
+
+.order-continue-btn:not(.primary) {
+  background: #f0f4ff;
+  color: #3b63fb;
+  border: 2px solid #3b63fb;
+}
+
+.order-continue-btn:not(.primary):hover {
+  background: #e0e8ff;
+  text-decoration: none;
+}
+
+.order-continue-btn:active {
+  transform: scale(0.98);
+}
+
+/* ── Responsive ── */
+@media (max-width: 599px) {
+  .order-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-confirmation-hero {
+    padding: 28px 16px 24px;
+  }
+
+  .order-confirmation-title {
+    font-size: 1.4rem;
+  }
+}

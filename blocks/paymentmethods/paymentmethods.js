@@ -1,3 +1,43 @@
+function validateExpiry(value) {
+  if (!value || value.length < 5) return false;
+  const parts = value.split('/');
+  if (parts.length !== 2) return false;
+  const month = parseInt(parts[0], 10);
+  const year = parseInt(`20${parts[1]}`, 10);
+  if (month < 1 || month > 12) return false;
+  const now = new Date();
+  if (year < now.getFullYear()) return false;
+  if (year === now.getFullYear() && month < now.getMonth() + 1) return false;
+  return true;
+}
+
+function generateOrderId() {
+  const ts = Date.now().toString(36).toUpperCase();
+  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `ORD-${ts}-${rand}`;
+}
+
+function showToast(message, isError) {
+  let toast = document.getElementById('checkout-toast-msg');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'checkout-toast-msg';
+    toast.style.cssText = `
+      position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(100px);
+      color:#fff; padding:12px 24px; border-radius:8px; font-size:0.9rem; font-weight:600;
+      box-shadow:0 4px 16px rgba(0,0,0,0.2); z-index:9999; transition:transform 0.3s ease;
+      white-space:nowrap; font-family:inherit;
+    `;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.background = isError ? '#d32f2f' : '#2e7d32';
+  toast.style.transform = 'translateX(-50%) translateY(0)';
+  setTimeout(() => {
+    toast.style.transform = 'translateX(-50%) translateY(100px)';
+  }, 3500);
+}
+
 export default function decorate(block) {
   const wrapper = document.createElement('div');
   wrapper.className = 'payment-methods-wrapper';
@@ -14,45 +54,43 @@ export default function decorate(block) {
     </div>
     <div class="payment-methods-content">
       <div class="payment-panel credit-card-panel active" id="credit-card-panel">
-        <form class="credit-card-form" id="credit-card-form" novalidate>
-          <div class="card-logos">
-            <span class="card-logo visa" title="Visa">VISA</span>
-            <span class="card-logo mastercard" title="Mastercard">MC</span>
-            <span class="card-logo amex" title="American Express">AMEX</span>
+        <div class="card-logos">
+          <span class="card-logo visa" title="Visa">VISA</span>
+          <span class="card-logo mastercard" title="Mastercard">MC</span>
+          <span class="card-logo amex" title="American Express">AMEX</span>
+        </div>
+        <div class="form-row">
+          <label for="card-name" class="form-label">Name on Card <span class="required">*</span></label>
+          <input type="text" id="card-name" name="card-name" class="form-input" placeholder="John Doe" autocomplete="cc-name">
+          <span class="field-error" id="card-name-error"></span>
+        </div>
+        <div class="form-row">
+          <label for="card-number" class="form-label">Card Number <span class="required">*</span></label>
+          <div class="card-number-wrapper">
+            <input type="text" id="card-number" name="card-number" class="form-input" placeholder="1234 5678 9012 3456" autocomplete="cc-number" maxlength="19" inputmode="numeric">
+            <span class="card-type-badge" id="card-type-badge"></span>
           </div>
-          <div class="form-row">
-            <label for="card-name" class="form-label">Name on Card <span class="required">*</span></label>
-            <input type="text" id="card-name" name="card-name" class="form-input" placeholder="John Doe" required autocomplete="cc-name">
-            <span class="field-error" id="card-name-error"></span>
+          <span class="field-error" id="card-number-error"></span>
+        </div>
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="card-expiry" class="form-label">Expiry Date <span class="required">*</span></label>
+            <input type="text" id="card-expiry" name="card-expiry" class="form-input" placeholder="MM/YY" autocomplete="cc-exp" maxlength="5" inputmode="numeric">
+            <span class="field-error" id="card-expiry-error"></span>
           </div>
-          <div class="form-row">
-            <label for="card-number" class="form-label">Card Number <span class="required">*</span></label>
-            <div class="card-number-wrapper">
-              <input type="text" id="card-number" name="card-number" class="form-input" placeholder="1234 5678 9012 3456" required autocomplete="cc-number" maxlength="19" inputmode="numeric">
-              <span class="card-type-badge" id="card-type-badge"></span>
+          <div class="form-group">
+            <label for="card-cvv" class="form-label">CVV <span class="required">*</span></label>
+            <div class="cvv-wrapper">
+              <input type="password" id="card-cvv" name="card-cvv" class="form-input" placeholder="&bull;&bull;&bull;" autocomplete="cc-csc" maxlength="4" inputmode="numeric">
+              <span class="cvv-help" title="3-4 digit security code on back of card">?</span>
             </div>
-            <span class="field-error" id="card-number-error"></span>
+            <span class="field-error" id="card-cvv-error"></span>
           </div>
-          <div class="form-row two-col">
-            <div class="form-group">
-              <label for="card-expiry" class="form-label">Expiry Date <span class="required">*</span></label>
-              <input type="text" id="card-expiry" name="card-expiry" class="form-input" placeholder="MM/YY" required autocomplete="cc-exp" maxlength="5" inputmode="numeric">
-              <span class="field-error" id="card-expiry-error"></span>
-            </div>
-            <div class="form-group">
-              <label for="card-cvv" class="form-label">CVV <span class="required">*</span></label>
-              <div class="cvv-wrapper">
-                <input type="password" id="card-cvv" name="card-cvv" class="form-input" placeholder="&bull;&bull;&bull;" required autocomplete="cc-csc" maxlength="4" inputmode="numeric">
-                <span class="cvv-help" title="3-4 digit security code on back of card">?</span>
-              </div>
-              <span class="field-error" id="card-cvv-error"></span>
-            </div>
-          </div>
-          <div class="secure-badge">
-            <span class="lock-icon">&#128274;</span>
-            <span>Your payment information is encrypted and secure.</span>
-          </div>
-        </form>
+        </div>
+        <div class="secure-badge">
+          <span class="lock-icon">&#128274;</span>
+          <span>Your payment information is encrypted and secure.</span>
+        </div>
       </div>
     </div>
     <div class="place-order-section">
@@ -67,156 +105,210 @@ export default function decorate(block) {
   block.innerHTML = '';
   block.appendChild(wrapper);
 
-  // Card number formatting (groups of 4)
+  // ── Card number formatting ──
   const cardNumberInput = block.querySelector('#card-number');
   cardNumberInput.addEventListener('input', (e) => {
     let val = e.target.value.replace(/\D/g, '').substring(0, 16);
     val = val.replace(/(.{4})/g, '$1 ').trim();
     e.target.value = val;
-
-    // Detect card type
     const badge = block.querySelector('#card-type-badge');
     const raw = val.replace(/\s/g, '');
-    if (/^4/.test(raw)) {
-      badge.textContent = 'VISA';
-      badge.className = 'card-type-badge visa';
-    } else if (/^5[1-5]/.test(raw)) {
-      badge.textContent = 'MC';
-      badge.className = 'card-type-badge mc';
-    } else if (/^3[47]/.test(raw)) {
-      badge.textContent = 'AMEX';
-      badge.className = 'card-type-badge amex';
-    } else {
-      badge.textContent = '';
-      badge.className = 'card-type-badge';
-    }
-
-    const errorEl = block.querySelector('#card-number-error');
-    if (raw.length > 0 && errorEl) {
-      errorEl.textContent = '';
-      cardNumberInput.classList.remove('input-error');
-    }
+    if (/^4/.test(raw)) { badge.textContent = 'VISA'; badge.className = 'card-type-badge visa'; }
+    else if (/^5[1-5]/.test(raw)) { badge.textContent = 'MC'; badge.className = 'card-type-badge mc'; }
+    else if (/^3[47]/.test(raw)) { badge.textContent = 'AMEX'; badge.className = 'card-type-badge amex'; }
+    else { badge.textContent = ''; badge.className = 'card-type-badge'; }
+    block.querySelector('#card-number-error').textContent = '';
+    cardNumberInput.classList.remove('input-error');
   });
 
-  // Expiry formatting MM/YY
+  // ── Expiry formatting ──
   const expiryInput = block.querySelector('#card-expiry');
   expiryInput.addEventListener('input', (e) => {
     let val = e.target.value.replace(/\D/g, '').substring(0, 4);
-    if (val.length >= 3) {
-      val = val.substring(0, 2) + '/' + val.substring(2);
-    }
+    if (val.length >= 3) val = `${val.substring(0, 2)}/${val.substring(2)}`;
     e.target.value = val;
-
-    const errorEl = block.querySelector('#card-expiry-error');
-    if (val.length > 0 && errorEl) {
-      errorEl.textContent = '';
-      expiryInput.classList.remove('input-error');
-    }
+    block.querySelector('#card-expiry-error').textContent = '';
+    expiryInput.classList.remove('input-error');
   });
 
-  // CVV - only digits
+  // ── CVV digits only ──
   const cvvInput = block.querySelector('#card-cvv');
   cvvInput.addEventListener('input', (e) => {
     e.target.value = e.target.value.replace(/\D/g, '').substring(0, 4);
-    const errorEl = block.querySelector('#card-cvv-error');
-    if (e.target.value.length > 0 && errorEl) {
-      errorEl.textContent = '';
-      cvvInput.classList.remove('input-error');
-    }
+    block.querySelector('#card-cvv-error').textContent = '';
+    cvvInput.classList.remove('input-error');
   });
 
-  // Real-time clearing of errors for name
+  // ── Name real-time clear ──
   const nameInput = block.querySelector('#card-name');
   nameInput.addEventListener('input', () => {
-    const errorEl = block.querySelector('#card-name-error');
-    if (nameInput.value.trim() && errorEl) {
-      errorEl.textContent = '';
-      nameInput.classList.remove('input-error');
-    }
+    block.querySelector('#card-name-error').textContent = '';
+    nameInput.classList.remove('input-error');
   });
 
-  // Expose validation method
-  block.validateForm = function validateForm() {
+  // ── Validate payment fields ──
+  function validatePayment() {
     let valid = true;
 
-    // Validate card name
-    const nameEl = block.querySelector('#card-name');
-    const nameError = block.querySelector('#card-name-error');
-    if (!nameEl.value.trim()) {
-      nameError.textContent = 'Name on card is required.';
-      nameEl.classList.add('input-error');
+    if (!nameInput.value.trim()) {
+      block.querySelector('#card-name-error').textContent = 'Name on card is required.';
+      nameInput.classList.add('input-error');
       valid = false;
     }
 
-    // Validate card number (any number, at least 13 digits)
-    const cardEl = block.querySelector('#card-number');
-    const cardError = block.querySelector('#card-number-error');
-    const rawCard = cardEl.value.replace(/\s/g, '');
+    const rawCard = cardNumberInput.value.replace(/\s/g, '');
     if (rawCard.length < 13) {
-      cardError.textContent = 'Please enter a valid card number.';
-      cardEl.classList.add('input-error');
+      block.querySelector('#card-number-error').textContent = 'Please enter a valid card number.';
+      cardNumberInput.classList.add('input-error');
       valid = false;
     }
 
-    // Validate expiry (must be future date)
-    const expiryEl = block.querySelector('#card-expiry');
-    const expiryError = block.querySelector('#card-expiry-error');
-    const expiryVal = expiryEl.value;
-    if (!validateExpiry(expiryVal)) {
-      expiryError.textContent = 'Please enter a valid future expiry date (MM/YY).';
-      expiryEl.classList.add('input-error');
+    if (!validateExpiry(expiryInput.value)) {
+      block.querySelector('#card-expiry-error').textContent = 'Please enter a valid future expiry date (MM/YY).';
+      expiryInput.classList.add('input-error');
       valid = false;
     }
 
-    // Validate CVV (any 3-4 digits)
-    const cvvEl = block.querySelector('#card-cvv');
-    const cvvError = block.querySelector('#card-cvv-error');
-    if (cvvEl.value.length < 3) {
-      cvvError.textContent = 'CVV must be 3 or 4 digits.';
-      cvvEl.classList.add('input-error');
+    if (cvvInput.value.length < 3) {
+      block.querySelector('#card-cvv-error').textContent = 'CVV must be 3 or 4 digits.';
+      cvvInput.classList.add('input-error');
       valid = false;
     }
 
     return valid;
-  };
+  }
 
-  // Expose getter for payment data
-  block.getPaymentData = function getPaymentData() {
-    const cardNumber = block.querySelector('#card-number').value;
-    const last4 = cardNumber.replace(/\s/g, '').slice(-4);
-    return {
-      method: 'credit-card',
-      nameOnCard: block.querySelector('#card-name').value,
-      last4,
-      expiry: block.querySelector('#card-expiry').value,
-    };
-  };
-
-  // Place order button
+  // ── Place Order ──
   const placeOrderBtn = block.querySelector('#place-order-btn');
   placeOrderBtn.addEventListener('click', () => {
-    // Dispatch custom event – the checkout page script handles full validation
-    const event = new CustomEvent('placeOrder', { bubbles: true });
-    block.dispatchEvent(event);
+    // Find billing block
+    const billingBlock = document.querySelector('.billingaddress');
+    const shippingBlock = document.querySelector('.shippingaddress');
+
+    let billingValid = true;
+    let shippingValid = true;
+
+    // Validate billing
+    if (billingBlock && typeof billingBlock.validateForm === 'function') {
+      billingValid = billingBlock.validateForm();
+    } else {
+      // Fallback: manual billing validation
+      const fields = ['billing-street', 'billing-city', 'billing-state', 'billing-zip', 'billing-country'];
+      fields.forEach((id) => {
+        const el = document.getElementById(id);
+        const err = document.getElementById(`${id}-error`);
+        if (el && !el.value.trim()) {
+          if (err) err.textContent = 'This field is required.';
+          if (el) el.classList.add('input-error');
+          billingValid = false;
+        }
+      });
+    }
+
+    // Validate shipping
+    if (shippingBlock && typeof shippingBlock.validateForm === 'function') {
+      shippingValid = shippingBlock.validateForm();
+    }
+
+    const paymentValid = validatePayment();
+
+    if (!billingValid) {
+      if (billingBlock) billingBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showToast('Please fill in all billing address fields.', true);
+      return;
+    }
+    if (!shippingValid) {
+      if (shippingBlock) shippingBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showToast('Please fill in all shipping address fields.', true);
+      return;
+    }
+    if (!paymentValid) {
+      block.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showToast('Please fix payment details.', true);
+      return;
+    }
+
+    // ── Collect order data ──
+    let billingAddress = {
+      street: '',
+      city: '',
+      state: '',
+      zip: '',
+      country: 'US',
+    };
+
+    if (billingBlock && typeof billingBlock.getAddress === 'function') {
+      billingAddress = billingBlock.getAddress();
+    } else {
+      billingAddress = {
+        street: (document.getElementById('billing-street') || {}).value || '',
+        city: (document.getElementById('billing-city') || {}).value || '',
+        state: (document.getElementById('billing-state') || {}).value || '',
+        zip: (document.getElementById('billing-zip') || {}).value || '',
+        country: (document.getElementById('billing-country') || {}).value || 'US',
+      };
+    }
+
+    let shippingAddress = billingAddress;
+    if (shippingBlock && typeof shippingBlock.getAddress === 'function') {
+      const addr = shippingBlock.getAddress();
+      if (addr) shippingAddress = addr;
+    }
+
+    const cardNumber = cardNumberInput.value;
+    const last4 = cardNumber.replace(/\s/g, '').slice(-4);
+    const paymentData = {
+      method: 'credit-card',
+      nameOnCard: nameInput.value,
+      last4,
+      expiry: expiryInput.value,
+    };
+
+    const cart = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('acc_commerce_cart') || localStorage.getItem('cart') || '[]');
+      } catch (e) {
+        return [];
+      }
+    })();
+
+    const total = cart.reduce((s, i) => s + (parseFloat(i.price) || 0) * (parseInt(i.quantity, 10) || 1), 0);
+
+    const orderData = {
+      orderId: generateOrderId(),
+      date: new Date().toISOString(),
+      billingAddress,
+      shippingAddress,
+      paymentData,
+      items: cart,
+      total: total.toFixed(2),
+    };
+
+    try {
+      localStorage.setItem('lastOrder', JSON.stringify(orderData));
+      localStorage.removeItem('acc_commerce_cart');
+      localStorage.removeItem('cart');
+    } catch (e) { /* ignore */ }
+
+    // ── Navigate ──
+    placeOrderBtn.textContent = 'Placing Order...';
+    placeOrderBtn.disabled = true;
+    showToast('Order placed! Redirecting...', false);
+
+    setTimeout(() => {
+      window.location.href = '/order-confirmation';
+    }, 800);
   });
-}
 
-function validateExpiry(value) {
-  if (!value || value.length < 5) return false;
-  const parts = value.split('/');
-  if (parts.length !== 2) return false;
-
-  const month = parseInt(parts[0], 10);
-  const year = parseInt('20' + parts[1], 10);
-
-  if (month < 1 || month > 12) return false;
-
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-
-  if (year < currentYear) return false;
-  if (year === currentYear && month < currentMonth) return false;
-
-  return true;
+  // Expose API for external use
+  block.validateForm = validatePayment;
+  block.getPaymentData = () => {
+    const last4 = cardNumberInput.value.replace(/\s/g, '').slice(-4);
+    return {
+      method: 'credit-card',
+      nameOnCard: nameInput.value,
+      last4,
+      expiry: expiryInput.value,
+    };
+  };
 }
