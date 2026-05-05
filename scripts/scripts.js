@@ -12,6 +12,9 @@ import {
   loadCSS,
 } from './aem.js';
 
+// ── digitalData datalayer – loaded immediately so it is available to all blocks
+import('./datalayer.js');
+
 /**
  * Builds hero block and prepends to main in a new section.
  * @param {Element} main The container element

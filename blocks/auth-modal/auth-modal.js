@@ -294,6 +294,27 @@ function buildSignInPanel() {
       // Set auth cookie and close modal immediately
       setAuthCookie(userCredential.user);
       closeModal();
+
+      // ── Push sign-in event to digitalData datalayer ────────────────────
+      if (window.digitalData && window.digitalData.setUser) {
+        window.digitalData.setUser({
+          customerId: userCredential.user.uid || '',
+          email: userCredential.user.email || '',
+          firstName: userCredential.user.displayName
+            ? userCredential.user.displayName.split(' ')[0]
+            : '',
+          lastName: userCredential.user.displayName
+            ? userCredential.user.displayName.split(' ').slice(1).join(' ')
+            : '',
+          phone: userCredential.user.phoneNumber || '',
+          country: '',
+          isEmailVerified: userCredential.user.emailVerified || false,
+          source: 'BETA_COMMERCE',
+          eventId: crypto.randomUUID(),
+          eventType: 'BETA_COMMERCE_USER_LOGIN',
+        });
+      }
+
       window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user: userCredential.user } }));
     } catch (err) {
       console.error('[AuthModal] Sign-in error:', err);
@@ -385,8 +406,25 @@ function buildCreateAccountPanel() {
       );
       form.reset();
 
+      // ── Push signup event to digitalData datalayer (non-blocking) ────────
+      const numericCustomerId = generateNumericCustomerId();
+      if (window.digitalData && window.digitalData.setUser) {
+        window.digitalData.setUser({
+          customerId: numericCustomerId,
+          email,
+          firstName,
+          lastName,
+          phone: '',
+          country: '',
+          isEmailVerified: false,
+          source: 'BETA_COMMERCE',
+          eventId: crypto.randomUUID(),
+          eventType: 'BETA_COMMERCE_USER_SIGNUP',
+        });
+      }
+
       // ── Save to Firestore in the background (non-blocking) ────────────────
-      const customerId = generateCustomerId();
+      const customerId = numericCustomerId;
       setDoc(doc(db, 'users', customerId), {
         customerId,
         uid: user.uid,

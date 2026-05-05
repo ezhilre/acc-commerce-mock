@@ -77,14 +77,24 @@ export default function decorate(block) {
   // Wire up Add to Cart button
   const btn = productCard.querySelector('.add-to-cart-btn');
   btn.addEventListener('click', () => {
+    const cartDetail = {
+      sku: productData.sku || `SKU-${Date.now()}`,
+      name: productData.name || 'Unknown Product',
+      price: formattedPrice,
+      image: productData.image || '',
+      category: productData.category || '',
+      quantity: 1,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Push directly to digitalData datalayer if available
+    if (window.digitalData && window.digitalData.pushAddToCart) {
+      window.digitalData.pushAddToCart(cartDetail);
+    }
+
     const event = new CustomEvent('addToCart', {
       bubbles: true,
-      detail: {
-        sku: productData.sku || `SKU-${Date.now()}`,
-        name: productData.name || 'Unknown Product',
-        price: formattedPrice,
-        image: productData.image || '',
-      },
+      detail: cartDetail,
     });
     btn.dispatchEvent(event);
 
