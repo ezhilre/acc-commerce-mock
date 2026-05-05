@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout - Beta Commerce</title>
+  <style>
+    /* ── Base ── */
+    :root {
+      --background-color: white;
+      --light-color: #f8f8f8;
+      --dark-color: #505050;
+      --text-color: #131313;
+      --link-color: #3b63fb;
+      --link-hover-color: #1d3ecf;
+      --body-font-family: roboto, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background-color: #f5f5f5;
+      font-family: var(--body-font-family);
+      font-size: 16px;
+      line-height: 1.6;
+      color: #131313;
+    }
+
+    a { color: #3b63fb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Layout ── */
+    .checkout-page {
+      max-width: 860px;
+      margin: 48px auto;
+      padding: 0 16px 80px;
+    }
+
+    .checkout-page-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #131313;
+      margin: 0 0 8px;
+    }
+
+    .checkout-breadcrumb {
+      font-size: 0.85rem;
+      color: #757575;
+      margin-bottom: 32px;
+    }
+
+    /* ── Steps ── */
+    .checkout-steps {
+      display: flex;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .checkout-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #9e9e9e;
+    }
+
+    .checkout-step.active { color: #3b63fb; }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      color: #757575;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .checkout-step.active .step-number {
+      background: #3b63fb;
+      color: #fff;
+    }
+
+    .step-divider {
+      flex: 1;
+      height: 2px;
+      background: #e0e0e0;
+      margin: 0 8px;
+      min-width: 20px;
+    }
+
+    /* ── Summary bar ── */
+    .order-summary-bar {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px 24px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .summary-label { font-size: 0.9rem; color: #757575; }
+    .summary-total { font-size: 1.2rem; font-weight: 700; color: #131313; }
+    .cart-items-count {
+      font-size: 0.85rem;
+      background: #f0f4ff;
+      color: #3b63fb;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* ── Shared block card ── */
+    .block-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .block-card-header {
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .block-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #131313;
+      margin: 0;
+    }
+
+    /* ── Shared form ── */
+    .form-row { margin-bottom: 16px; }
+
+    .form-row.two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-group { display: flex; flex-direction: column; }
+
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 6px;
+    }
+
+    .required { color: #d32f2f; }
+
+    .form-input,
+    .form-select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      color: #131313;
+      background: #fafafa;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+      appearance: auto;
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: #3b63fb;
+      box-shadow: 0 0 0 3px rgba(59, 99, 251, 0.15);
+      background: #fff;
+    }
+
+    .form-input.input-error,
+    .form-select.input-error {
+      border-color: #d32f2f;
+      box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
+    }
+
+    .field-error {
+      display: block;
+      font-size: 0.78rem;
+      color: #d32f2f;
+      margin-top: 4px;
+      min-height: 16px;
+    }
+
+    /* ── Shipping specific ── */
+    .shipping-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .same-as-billing-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: #333;
+      user-select: none;
+    }
+
+    .same-as-billing-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #3b63fb;
+    }
+
+    .same-billing-summary {
+      padding: 12px 16px;
+      background: #f0f4ff;
+      border-radius: 6px;
+      border-left: 4px solid #3b63fb;
+    }
+
+    .same-billing-note {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #3b63fb;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Payment specific ── */
+    .payment-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border: 2px solid #3b63fb;
+      border-radius: 8px;
+      background: #3b63fb;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .card-logos {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .card-logo {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .card-logo.visa { background: #1a1f71; color: #fff; }
+    .card-logo.mc { background: #eb001b; color: #fff; }
+    .card-logo.amex { background: #007bc1; color: #fff; }
+
+    .card-number-wrapper { position: relative; }
+    .card-number-wrapper .form-input { padding-right: 64px; }
+
+    .card-type-badge {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    .card-type-badge.visa { background: #1a1f71; color: #fff; }
+    .card-type-badge.mc { background: #eb001b; color: #fff; }
+    .card-type-badge.amex { background: #007bc1; color: #fff; }
+
+    .cvv-wrapper { position: relative; display: flex; align-items: center; }
+    .cvv-wrapper .form-input { flex: 1; padding-right: 40px; }
+
+    .cvv-help {
+      position: absolute;
+      right: 10px;
+      width: 20px;
+      height: 20px;
+      background: #9e9e9e;
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: help;
+    }
+
+    .secure-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: #f0faf0;
+      border: 1px solid #c8e6c9;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: #2e7d32;
+      margin-top: 8px;
+    }
+
+    /* ── Place order ── */
+    .place-order-section {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 2px solid #f0f0f0;
+    }
+
+    .place-order-btn {
+      width: 100%;
+      padding: 16px;
+      background: #3b63fb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: background 0.2s, transform 0.1s;
+      font-family: inherit;
+    }
+
+    .place-order-btn:hover { background: #1d3ecf; }
+    .place-order-btn:active { transform: scale(0.98); }
+    .place-order-btn:disabled { background: #9e9e9e; cursor: not-allowed; }
+
+    .order-terms {
+      margin-top: 12px;
+      font-size: 0.8rem;
+      color: #757575;
+      text-align: center;
+    }
+
+    /* ── Toast ── */
+    .checkout-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      z-index: 9999;
+      transition: transform 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .checkout-toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 599px) {
+      .form-row.two-col { grid-template-columns: 1fr; }
+      .shipping-header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="checkout-page">
+    <h1 class="checkout-page-title">Checkout</h1>
+    <div class="checkout-breadcrumb">
+      <a href="/">Home</a> &rsaquo; <a href="/cart">Cart</a> &rsaquo; Checkout
+    </div>
+
+    <!-- Steps -->
+    <div class="checkout-steps">
+      <div class="checkout-step active">
+        <span class="step-number">1</span>
+        <span>Address</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="checkout-step active">
+        <span class="step-number">2</span>
+        <span>Payment</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="checkout-step">
+        <span class="step-number">3</span>
+        <span>Confirmation</span>
+      </div>
+    </div>
+
+    <!-- Summary bar -->
+    <div class="order-summary-bar">
+      <div>
+        <span class="summary-label">Order Total &nbsp;</span>
+        <span class="summary-total" id="order-total">$0.00</span>
+      </div>
+      <span class="cart-items-count" id="cart-items-count">0 items</span>
+    </div>
+
+    <!-- ═══ BILLING ADDRESS ═══ -->
+    <div class="block-card" id="billing-block">
+      <div class="block-card-header">
+        <h2 class="block-title">Billing Address</h2>
+      </div>
+      <div class="form-row">
+        <label for="billing-street" class="form-label">Street <span class="required">*</span></label>
+        <input type="text" id="billing-street" class="form-input" placeholder="123 Main Street" autocomplete="street-address">
+        <span class="field-error" id="billing-street-error"></span>
+      </div>
+      <div class="form-row two-col">
+        <div class="form-group">
+          <label for="billing-city" class="form-label">City <span class="required">*</span></label>
+          <input type="text" id="billing-city" class="form-input" placeholder="New York" autocomplete="address-level2">
+          <span class="field-error" id="billing-city-error"></span>
+        </div>
+        <div class="form-group">
+          <label for="billing-state" class="form-label">State <span class="required">*</span></label>
+          <select id="billing-state" class="form-select" autocomplete="address-level1">
+            <option value="">Select State</option>
+            <option value="AL">Alabama</option><option value="AK">Alaska</option>
+            <option value="AZ">Arizona</option><option value="AR">Arkansas</option>
+            <option value="CA">California</option><option value="CO">Colorado</option>
+            <option value="CT">Connecticut</option><option value="DE">Delaware</option>
+            <option value="FL">Florida</option><option value="GA">Georgia</option>
+            <option value="HI">Hawaii</option><option value="ID">Idaho</option>
+            <option value="IL">Illinois</option><option value="IN">Indiana</option>
+            <option value="IA">Iowa</option><option value="KS">Kansas</option>
+            <option value="KY">Kentucky</option><option value="LA">Louisiana</option>
+            <option value="ME">Maine</option><option value="MD">Maryland</option>
+            <option value="MA">Massachusetts</option><option value="MI">Michigan</option>
+            <option value="MN">Minnesota</option><option value="MS">Mississippi</option>
+            <option value="MO">Missouri</option><option value="MT">Montana</option>
+            <option value="NE">Nebraska</option><option value="NV">Nevada</option>
+            <option value="NH">New Hampshire</option><option value="NJ">New Jersey</option>
+            <option value="NM">New Mexico</option><option value="NY">New York</option>
+            <option value="NC">North Carolina</option><option value="ND">North Dakota</option>
+            <option value="OH">Ohio</option><option value="OK">Oklahoma</option>
+            <option value="OR">Oregon</option><option value="PA">Pennsylvania</option>
+            <option value="RI">Rhode Island</option><option value="SC">South Carolina</option>
+            <option value="SD">South Dakota</option><option value="TN">Tennessee</option>
+            <option value="TX">Texas</option><option value="UT">Utah</option>
+            <option value="VT">Vermont</option><option value="VA">Virginia</option>
+            <option value="WA">Washington</option><option value="WV">West Virginia</option>
+            <option value="WI">Wisconsin</option><option value="WY">Wyoming</option>
+          </select>
+          <span class="field-error" id="billing-state-error"></span>
+        </div>
+      </div>
+      <div class="form-row two-col">
+        <div class="form-group">
+          <label for="billing-zip" class="form-label">Zip Code <span class="required">*</span></label>
+          <input type="text" id="billing-zip" class="form-input" placeholder="10001" maxlength="10" autocomplete="postal-code">
+          <span class="field-error" id="billing-zip-error"></span>
+        </div>
+        <div class="form-group">
+          <label for="billing-country" class="form-label">Country <span class="required">*</span></label>
+          <select id="billing-country" class="form-select" autocomplete="country">
+            <option value="US" selected>United States</option>
+            <option value="CA">Canada</option><option value="GB">United Kingdom</option>
+            <option value="AU">Australia</option><option value="IN">India</option>
+            <option value="DE">Germany</option><option value="FR">France</option>
+            <option value="JP">Japan</option><option value="SG">Singapore</option>
+            <option value="AE">UAE</option>
+          </select>
+          <span class="field-error" id="billing-country-error"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SHIPPING ADDRESS ═══ -->
+    <div class="block-card" id="shipping-block">
+      <div class="shipping-header">
+        <h2 class="block-title">Shipping Address</h2>
+        <label class="same-as-billing-label">
+          <input type="checkbox" id="same-as-billing" checked>
+          <span>Same as billing address</span>
+        </label>
+      </div>
+      <div id="shipping-fields" style="display:none;">
+        <div class="form-row">
+          <label for="shipping-street" class="form-label">Street <span class="required">*</span></label>
+          <input type="text" id="shipping-street" class="form-input" placeholder="123 Main Street" autocomplete="shipping street-address">
+          <span class="field-error" id="shipping-street-error"></span>
+        </div>
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="shipping-city" class="form-label">City <span class="required">*</span></label>
+            <input type="text" id="shipping-city" class="form-input" placeholder="New York" autocomplete="shipping address-level2">
+            <span class="field-error" id="shipping-city-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="shipping-state" class="form-label">State <span class="required">*</span></label>
+            <select id="shipping-state" class="form-select" autocomplete="shipping address-level1">
+              <option value="">Select State</option>
+              <option value="AL">Alabama</option><option value="AK">Alaska</option>
+              <option value="AZ">Arizona</option><option value="AR">Arkansas</option>
+              <option value="CA">California</option><option value="CO">Colorado</option>
+              <option value="CT">Connecticut</option><option value="DE">Delaware</option>
+              <option value="FL">Florida</option><option value="GA">Georgia</option>
+              <option value="HI">Hawaii</option><option value="ID">Idaho</option>
+              <option value="IL">Illinois</option><option value="IN">Indiana</option>
+              <option value="IA">Iowa</option><option value="KS">Kansas</option>
+              <option value="KY">Kentucky</option><option value="LA">Louisiana</option>
+              <option value="ME">Maine</option><option value="MD">Maryland</option>
+              <option value="MA">Massachusetts</option><option value="MI">Michigan</option>
+              <option value="MN">Minnesota</option><option value="MS">Mississippi</option>
+              <option value="MO">Missouri</option><option value="MT">Montana</option>
+              <option value="NE">Nebraska</option><option value="NV">Nevada</option>
+              <option value="NH">New Hampshire</option><option value="NJ">New Jersey</option>
+              <option value="NM">New Mexico</option><option value="NY">New York</option>
+              <option value="NC">North Carolina</option><option value="ND">North Dakota</option>
+              <option value="OH">Ohio</option><option value="OK">Oklahoma</option>
+              <option value="OR">Oregon</option><option value="PA">Pennsylvania</option>
+              <option value="RI">Rhode Island</option><option value="SC">South Carolina</option>
+              <option value="SD">South Dakota</option><option value="TN">Tennessee</option>
+              <option value="TX">Texas</option><option value="UT">Utah</option>
+              <option value="VT">Vermont</option><option value="VA">Virginia</option>
+              <option value="WA">Washington</option><option value="WV">West Virginia</option>
+              <option value="WI">Wisconsin</option><option value="WY">Wyoming</option>
+            </select>
+            <span class="field-error" id="shipping-state-error"></span>
+          </div>
+        </div>
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="shipping-zip" class="form-label">Zip Code <span class="required">*</span></label>
+            <input type="text" id="shipping-zip" class="form-input" placeholder="10001" maxlength="10" autocomplete="shipping postal-code">
+            <span class="field-error" id="shipping-zip-error"></span>
+          </div>
+          <div class="form-group">
+            <label for="shipping-country" class="form-label">Country <span class="required">*</span></label>
+            <select id="shipping-country" class="form-select" autocomplete="shipping country">
+              <option value="US" selected>United States</option>
+              <option value="CA">Canada</option><option value="GB">United Kingdom</option>
+              <option value="AU">Australia</option><option value="IN">India</option>
+              <option value="DE">Germany</option><option value="FR">France</option>
+              <option value="JP">Japan</option><option value="SG">Singapore</option>
+              <option value="AE">UAE</option>
+            </select>
+            <span class="field-error" id="shipping-country-error"></span>
+          </div>
+        </div>
+      </div>
+      <div id="shipping-same-summary" class="same-billing-summary">
+        <p class="same-billing-note">
+          <span style="color:#2e7d32;font-weight:700;">&#10003;</span>
+          Shipping address is the same as your billing address.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══ PAYMENT METHODS ═══ -->
+    <div class="block-card" id="payment-block">
+      <div class="block-card-header">
+        <h2 class="block-title">Payment Method</h2>
+      </div>
+      <div class="payment-tab">
+        <span>&#128179;</span>
+        <span>Credit Card</span>
+      </div>
+      <div class="card-logos">
+        <span class="card-logo visa">VISA</span>
+        <span class="card-logo mc">MC</span>
+        <span class="card-logo amex">AMEX</span>
+      </div>
+      <div class="form-row">
+        <label for="card-name" class="form-label">Name on Card <span class="required">*</span></label>
+        <input type="text" id="card-name" class="form-input" placeholder="John Doe" autocomplete="cc-name">
+        <span class="field-error" id="card-name-error"></span>
+      </div>
+      <div class="form-row">
+        <label for="card-number" class="form-label">Card Number <span class="required">*</span></label>
+        <div class="card-number-wrapper">
+          <input type="text" id="card-number" class="form-input" placeholder="1234 5678 9012 3456" maxlength="19" inputmode="numeric" autocomplete="cc-number">
+          <span class="card-type-badge" id="card-type-badge"></span>
+        </div>
+        <span class="field-error" id="card-number-error"></span>
+      </div>
+      <div class="form-row two-col">
+        <div class="form-group">
+          <label for="card-expiry" class="form-label">Expiry Date <span class="required">*</span></label>
+          <input type="text" id="card-expiry" class="form-input" placeholder="MM/YY" maxlength="5" inputmode="numeric" autocomplete="cc-exp">
+          <span class="field-error" id="card-expiry-error"></span>
+        </div>
+        <div class="form-group">
+          <label for="card-cvv" class="form-label">CVV <span class="required">*</span></label>
+          <div class="cvv-wrapper">
+            <input type="password" id="card-cvv" class="form-input" placeholder="&bull;&bull;&bull;" maxlength="4" inputmode="numeric" autocomplete="cc-csc">
+            <span class="cvv-help" title="3-4 digit code on the back of your card">?</span>
+          </div>
+          <span class="field-error" id="card-cvv-error"></span>
+        </div>
+      </div>
+      <div class="secure-badge">
+        <span>&#128274;</span>
+        <span>Your payment information is encrypted and secure.</span>
+      </div>
+
+      <div class="place-order-section">
+        <button type="button" class="place-order-btn" id="place-order-btn">
+          Place Order
+        </button>
+        <p class="order-terms">By placing your order, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="checkout-toast" id="checkout-toast"></div>
+
+  <script>
+    /* ── Order summary from localStorage ── */
+    (function populateSummary() {
+      try {
+        var cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        if (cart.length > 0) {
+          var total = cart.reduce(function(s, i) {
+            return s + (parseFloat(i.price) || 0) * ((parseInt(i.quantity, 10) || 1));
+          }, 0);
+          var count = cart.reduce(function(s, i) { return s + (parseInt(i.quantity, 10) || 1); }, 0);
+          document.getElementById('order-total').textContent = '$' + total.toFixed(2);
+          document.getElementById('cart-items-count').textContent = count + (count === 1 ? ' item' : ' items');
+        }
+      } catch(e) {}
+    })();
+
+    /* ── Real-time error clearing for all form inputs ── */
+    document.querySelectorAll('.form-input, .form-select').forEach(function(el) {
+      el.addEventListener('input', function() {
+        if (el.value.trim()) {
+          el.classList.remove('input-error');
+          var err = document.getElementById(el.id + '-error');
+          if (err) err.textContent = '';
+        }
+      });
+      el.addEventListener('change', function() {
+        if (el.value.trim()) {
+          el.classList.remove('input-error');
+          var err = document.getElementById(el.id + '-error');
+          if (err) err.textContent = '';
+        }
+      });
+    });
+
+    /* ── Same-as-billing toggle ── */
+    var sameCheckbox = document.getElementById('same-as-billing');
+    var shippingFields = document.getElementById('shipping-fields');
+    var shippingSummary = document.getElementById('shipping-same-summary');
+
+    sameCheckbox.addEventListener('change', function() {
+      shippingFields.style.display = this.checked ? 'none' : 'block';
+      shippingSummary.style.display = this.checked ? 'block' : 'none';
+    });
+
+    /* ── Card number formatting ── */
+    var cardNumberInput = document.getElementById('card-number');
+    cardNumberInput.addEventListener('input', function(e) {
+      var val = e.target.value.replace(/\D/g, '').substring(0, 16);
+      val = val.replace(/(.{4})/g, '$1 ').trim();
+      e.target.value = val;
+      var badge = document.getElementById('card-type-badge');
+      var raw = val.replace(/\s/g, '');
+      if (/^4/.test(raw)) { badge.textContent = 'VISA'; badge.className = 'card-type-badge visa'; }
+      else if (/^5[1-5]/.test(raw)) { badge.textContent = 'MC'; badge.className = 'card-type-badge mc'; }
+      else if (/^3[47]/.test(raw)) { badge.textContent = 'AMEX'; badge.className = 'card-type-badge amex'; }
+      else { badge.textContent = ''; badge.className = 'card-type-badge'; }
+      clearError('card-number');
+    });
+
+    /* ── Expiry formatting ── */
+    var expiryInput = document.getElementById('card-expiry');
+    expiryInput.addEventListener('input', function(e) {
+      var val = e.target.value.replace(/\D/g, '').substring(0, 4);
+      if (val.length >= 3) val = val.substring(0, 2) + '/' + val.substring(2);
+      e.target.value = val;
+      clearError('card-expiry');
+    });
+
+    /* ── CVV digits only ── */
+    var cvvInput = document.getElementById('card-cvv');
+    cvvInput.addEventListener('input', function(e) {
+      e.target.value = e.target.value.replace(/\D/g, '').substring(0, 4);
+      clearError('card-cvv');
+    });
+
+    /* ── Clear error helper ── */
+    function clearError(fieldId) {
+      var el = document.getElementById(fieldId);
+      var err = document.getElementById(fieldId + '-error');
+      if (el) el.classList.remove('input-error');
+      if (err) err.textContent = '';
+    }
+
+    function setError(fieldId, message) {
+      var el = document.getElementById(fieldId);
+      var err = document.getElementById(fieldId + '-error');
+      if (el) el.classList.add('input-error');
+      if (err) err.textContent = message;
+    }
+
+    /* ── Validate billing ── */
+    function validateBilling() {
+      var valid = true;
+      var fields = [
+        { id: 'billing-street', label: 'Street' },
+        { id: 'billing-city', label: 'City' },
+        { id: 'billing-state', label: 'State' },
+        { id: 'billing-zip', label: 'Zip Code' },
+        { id: 'billing-country', label: 'Country' }
+      ];
+      fields.forEach(function(f) {
+        var el = document.getElementById(f.id);
+        if (!el || !el.value.trim()) {
+          setError(f.id, f.label + ' is required.');
+          valid = false;
+        } else {
+          clearError(f.id);
+        }
+      });
+      return valid;
+    }
+
+    /* ── Validate shipping (only when not same-as-billing) ── */
+    function validateShipping() {
+      if (document.getElementById('same-as-billing').checked) return true;
+      var valid = true;
+      var fields = [
+        { id: 'shipping-street', label: 'Street' },
+        { id: 'shipping-city', label: 'City' },
+        { id: 'shipping-state', label: 'State' },
+        { id: 'shipping-zip', label: 'Zip Code' },
+        { id: 'shipping-country', label: 'Country' }
+      ];
+      fields.forEach(function(f) {
+        var el = document.getElementById(f.id);
+        if (!el || !el.value.trim()) {
+          setError(f.id, f.label + ' is required.');
+          valid = false;
+        } else {
+          clearError(f.id);
+        }
+      });
+      return valid;
+    }
+
+    /* ── Validate expiry (future date) ── */
+    function validateExpiry(value) {
+      if (!value || value.length < 5) return false;
+      var parts = value.split('/');
+      if (parts.length !== 2) return false;
+      var month = parseInt(parts[0], 10);
+      var year = parseInt('20' + parts[1], 10);
+      if (month < 1 || month > 12) return false;
+      var now = new Date();
+      var currentYear = now.getFullYear();
+      var currentMonth = now.getMonth() + 1;
+      if (year < currentYear) return false;
+      if (year === currentYear && month < currentMonth) return false;
+      return true;
+    }
+
+    /* ── Validate payment ── */
+    function validatePayment() {
+      var valid = true;
+
+      var nameEl = document.getElementById('card-name');
+      if (!nameEl.value.trim()) {
+        setError('card-name', 'Name on card is required.');
+        valid = false;
+      }
+
+      var cardEl = document.getElementById('card-number');
+      var rawCard = cardEl.value.replace(/\s/g, '');
+      if (rawCard.length < 13) {
+        setError('card-number', 'Please enter a valid card number.');
+        valid = false;
+      }
+
+      var expiryEl = document.getElementById('card-expiry');
+      if (!validateExpiry(expiryEl.value)) {
+        setError('card-expiry', 'Please enter a valid future expiry date (MM/YY).');
+        valid = false;
+      }
+
+      var cvvEl = document.getElementById('card-cvv');
+      if (cvvEl.value.length < 3) {
+        setError('card-cvv', 'CVV must be 3 or 4 digits.');
+        valid = false;
+      }
+
+      return valid;
+    }
+
+    /* ── Toast ── */
+    function showToast(message, isError) {
+      var toast = document.getElementById('checkout-toast');
+      toast.textContent = message;
+      toast.style.background = (isError !== false) ? '#d32f2f' : '#2e7d32';
+      toast.classList.add('show');
+      setTimeout(function() { toast.classList.remove('show'); }, 3500);
+    }
+
+    /* ── Place Order ── */
+    document.getElementById('place-order-btn').addEventListener('click', function() {
+      var billingOk = validateBilling();
+      var shippingOk = validateShipping();
+      var paymentOk = validatePayment();
+
+      if (!billingOk) {
+        document.getElementById('billing-block').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        showToast('Please fill in all required fields.');
+        return;
+      }
+      if (!shippingOk) {
+        document.getElementById('shipping-block').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        showToast('Please fill in all required shipping fields.');
+        return;
+      }
+      if (!paymentOk) {
+        document.getElementById('payment-block').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        showToast('Please fix payment details.');
+        return;
+      }
+
+      /* Collect data */
+      var billingAddress = {
+        street: document.getElementById('billing-street').value,
+        city: document.getElementById('billing-city').value,
+        state: document.getElementById('billing-state').value,
+        zip: document.getElementById('billing-zip').value,
+        country: document.getElementById('billing-country').value
+      };
+
+      var isSame = document.getElementById('same-as-billing').checked;
+      var shippingAddress = isSame ? billingAddress : {
+        street: document.getElementById('shipping-street').value,
+        city: document.getElementById('shipping-city').value,
+        state: document.getElementById('shipping-state').value,
+        zip: document.getElementById('shipping-zip').value,
+        country: document.getElementById('shipping-country').value
+      };
+
+      var cardNumber = document.getElementById('card-number').value;
+      var last4 = cardNumber.replace(/\s/g, '').slice(-4);
+      var paymentData = {
+        method: 'credit-card',
+        nameOnCard: document.getElementById('card-name').value,
+        last4: last4,
+        expiry: document.getElementById('card-expiry').value
+      };
+
+      var orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
+      var orderData = {
+        orderId: orderId,
+        date: new Date().toISOString(),
+        billingAddress: billingAddress,
+        shippingAddress: shippingAddress,
+        paymentData: paymentData,
+        items: JSON.parse(localStorage.getItem('cart') || '[]'),
+        total: document.getElementById('order-total').textContent
+      };
+
+      try {
+        localStorage.setItem('lastOrder', JSON.stringify(orderData));
+        localStorage.removeItem('cart');
+      } catch(e) {}
+
+      var btn = document.getElementById('place-order-btn');
+      btn.textContent = 'Placing Order...';
+      btn.disabled = true;
+
+      showToast('Order placed! Redirecting...', false);
+
+      setTimeout(function() {
+        window.location.href = 'order-confirmation.html';
+      }, 900);
+    });
+  </script>
+</body>
+</html>

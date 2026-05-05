@@ -1,0 +1,89 @@
+.billingaddress {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.billing-address-header {
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.billing-address-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #131313;
+  margin: 0;
+}
+
+.billing-address-form .form-row {
+  margin-bottom: 16px;
+}
+
+.billing-address-form .form-row.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.billing-address-form .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.billing-address-form .form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.billing-address-form .required {
+  color: #d32f2f;
+}
+
+.billing-address-form .form-input,
+.billing-address-form .form-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #131313;
+  background: #fafafa;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: auto;
+}
+
+.billing-address-form .form-input:focus,
+.billing-address-form .form-select:focus {
+  outline: none;
+  border-color: #3b63fb;
+  box-shadow: 0 0 0 3px rgba(59, 99, 251, 0.15);
+  background: #fff;
+}
+
+.billing-address-form .form-input.input-error,
+.billing-address-form .form-select.input-error {
+  border-color: #d32f2f;
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.1);
+}
+
+.billing-address-form .field-error {
+  display: block;
+  font-size: 0.78rem;
+  color: #d32f2f;
+  margin-top: 4px;
+  min-height: 16px;
+}
+
+@media (max-width: 599px) {
+  .billing-address-form .form-row.two-col {
+    grid-template-columns: 1fr;
+  }
+}

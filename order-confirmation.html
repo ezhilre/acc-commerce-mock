@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmed - Beta Commerce</title>
+  <link rel="stylesheet" href="styles/styles.css">
+  <style>
+    body {
+      display: block;
+      margin: 0;
+      background-color: #f5f5f5;
+      font-family: var(--body-font-family, roboto, sans-serif);
+    }
+
+    .confirmation-page {
+      max-width: 720px;
+      margin: 60px auto;
+      padding: 0 16px 80px;
+    }
+
+    /* Success hero */
+    .confirmation-hero {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 48px 40px;
+      text-align: center;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .confirmation-icon {
+      width: 80px;
+      height: 80px;
+      background: #e8f5e9;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 2.5rem;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .confirmation-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #2e7d32;
+      margin: 0 0 8px;
+    }
+
+    .confirmation-subtitle {
+      font-size: 1rem;
+      color: #616161;
+      margin: 0 0 24px;
+    }
+
+    .order-id-badge {
+      display: inline-block;
+      background: #f0f4ff;
+      color: #3b63fb;
+      border: 1px solid #c5d3fd;
+      border-radius: 24px;
+      padding: 8px 20px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    /* Detail cards */
+    .confirmation-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .detail-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 24px;
+    }
+
+    .detail-card-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #9e9e9e;
+      margin: 0 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .detail-card-title .card-icon {
+      font-size: 1rem;
+    }
+
+    .detail-line {
+      font-size: 0.9rem;
+      color: #333;
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+
+    .detail-line strong {
+      color: #131313;
+    }
+
+    /* Payment card */
+    .payment-card-display {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #f8f8f8;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    .payment-card-icon {
+      font-size: 1.6rem;
+    }
+
+    .payment-card-info .card-ending {
+      font-size: 0.85rem;
+      color: #757575;
+    }
+
+    .payment-card-info .card-method {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #131313;
+    }
+
+    /* Order items */
+    .order-items-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .order-items-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #9e9e9e;
+      margin: 0 0 16px;
+    }
+
+    .order-item-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .order-item-row:last-child {
+      border-bottom: none;
+    }
+
+    .order-item-img {
+      width: 52px;
+      height: 52px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #f5f5f5;
+      flex-shrink: 0;
+    }
+
+    .order-item-img-placeholder {
+      width: 52px;
+      height: 52px;
+      border-radius: 6px;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .order-item-details {
+      flex: 1;
+    }
+
+    .order-item-name {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #131313;
+    }
+
+    .order-item-sku {
+      font-size: 0.78rem;
+      color: #9e9e9e;
+    }
+
+    .order-item-qty-price {
+      text-align: right;
+    }
+
+    .order-item-price {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #131313;
+    }
+
+    .order-item-qty {
+      font-size: 0.78rem;
+      color: #9e9e9e;
+    }
+
+    .order-total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 2px solid #f0f0f0;
+    }
+
+    .order-total-label {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #131313;
+    }
+
+    .order-total-amount {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #131313;
+    }
+
+    /* What's next section */
+    .whats-next-card {
+      background: #f0f4ff;
+      border: 1px solid #c5d3fd;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .whats-next-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #3b63fb;
+      margin: 0 0 14px;
+    }
+
+    .whats-next-steps {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .whats-next-steps li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: #333;
+    }
+
+    .step-dot {
+      width: 20px;
+      height: 20px;
+      background: #3b63fb;
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Action buttons */
+    .confirmation-actions {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn-continue-shopping {
+      flex: 1;
+      min-width: 180px;
+      padding: 14px 20px;
+      background: #3b63fb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+
+    .btn-continue-shopping:hover {
+      background: #1d3ecf;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .btn-print-order {
+      flex: 1;
+      min-width: 180px;
+      padding: 14px 20px;
+      background: transparent;
+      color: #3b63fb;
+      border: 2px solid #3b63fb;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .btn-print-order:hover {
+      background: #f0f4ff;
+    }
+
+    .no-order-message {
+      text-align: center;
+      padding: 60px 24px;
+      color: #757575;
+    }
+
+    .no-order-message h2 {
+      color: #333;
+    }
+
+    @media (max-width: 599px) {
+      .confirmation-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .confirmation-hero {
+        padding: 32px 20px;
+      }
+
+      .confirmation-title {
+        font-size: 1.5rem;
+      }
+
+      .confirmation-actions {
+        flex-direction: column;
+      }
+    }
+
+    @media print {
+      .confirmation-actions,
+      .whats-next-card {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header></header>
+
+  <div class="confirmation-page" id="confirmation-page">
+    <!-- Content injected by JS -->
+  </div>
+
+  <footer></footer>
+
+  <script type="module">
+    function formatAddress(addr) {
+      if (!addr) return 'N/A';
+      const parts = [addr.street, addr.city, addr.state, addr.zip, addr.country].filter(Boolean);
+      return parts.join(', ');
+    }
+
+    function renderConfirmation(order) {
+      const page = document.getElementById('confirmation-page');
+
+      // Build items HTML
+      let itemsHTML = '';
+      if (order.items && order.items.length > 0) {
+        order.items.forEach((item) => {
+          const imgHTML = item.image
+            ? `<img src="${item.image}" alt="${item.name || 'Product'}" class="order-item-img">`
+            : `<div class="order-item-img-placeholder">&#128722;</div>`;
+          itemsHTML += `
+            <div class="order-item-row">
+              ${imgHTML}
+              <div class="order-item-details">
+                <div class="order-item-name">${item.name || 'Product'}</div>
+                ${item.sku ? `<div class="order-item-sku">SKU: ${item.sku}</div>` : ''}
+              </div>
+              <div class="order-item-qty-price">
+                <div class="order-item-price">$${parseFloat(item.price || 0).toFixed(2)}</div>
+                <div class="order-item-qty">Qty: ${item.quantity || 1}</div>
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        itemsHTML = '<p style="color:#9e9e9e;font-size:0.9rem;">No items found.</p>';
+      }
+
+      // Format date
+      const orderDate = order.date
+        ? new Date(order.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : 'N/A';
+
+      // Payment display
+      const payMethod = order.paymentData && order.paymentData.method === 'credit-card'
+        ? `<div class="payment-card-display">
+            <span class="payment-card-icon">&#128179;</span>
+            <div class="payment-card-info">
+              <div class="payment-card-method">Credit Card</div>
+              <div class="payment-card-ending">Ending in ${order.paymentData.last4 || '****'}</div>
+            </div>
+           </div>`
+        : '<div class="detail-line">N/A</div>';
+
+      page.innerHTML = `
+        <!-- Hero -->
+        <div class="confirmation-hero">
+          <div class="confirmation-icon">&#10003;</div>
+          <h1 class="confirmation-title">Order Confirmed!</h1>
+          <p class="confirmation-subtitle">Thank you for your purchase. Your order has been placed successfully.</p>
+          <span class="order-id-badge">Order ID: ${order.orderId}</span>
+          <p style="font-size:0.82rem;color:#9e9e9e;margin-top:12px;">Placed on ${orderDate}</p>
+        </div>
+
+        <!-- Address & Payment grid -->
+        <div class="confirmation-grid">
+          <div class="detail-card">
+            <p class="detail-card-title"><span class="card-icon">&#128205;</span> Billing Address</p>
+            <p class="detail-line">${formatAddress(order.billingAddress)}</p>
+          </div>
+          <div class="detail-card">
+            <p class="detail-card-title"><span class="card-icon">&#128666;</span> Shipping Address</p>
+            <p class="detail-line">${formatAddress(order.shippingAddress)}</p>
+          </div>
+          <div class="detail-card">
+            <p class="detail-card-title"><span class="card-icon">&#128179;</span> Payment</p>
+            ${payMethod}
+          </div>
+          <div class="detail-card">
+            <p class="detail-card-title"><span class="card-icon">&#128230;</span> Estimated Delivery</p>
+            <p class="detail-line"><strong>3–5 Business Days</strong></p>
+            <p class="detail-line" style="font-size:0.82rem;color:#9e9e9e;">Standard shipping</p>
+          </div>
+        </div>
+
+        <!-- Order items -->
+        <div class="order-items-card">
+          <p class="order-items-title">&#128722; Order Items</p>
+          ${itemsHTML}
+          <div class="order-total-row">
+            <span class="order-total-label">Total</span>
+            <span class="order-total-amount">${order.total || '$0.00'}</span>
+          </div>
+        </div>
+
+        <!-- What's next -->
+        <div class="whats-next-card">
+          <p class="whats-next-title">&#128338; What happens next?</p>
+          <ul class="whats-next-steps">
+            <li><span class="step-dot">1</span><span>You will receive an order confirmation email shortly.</span></li>
+            <li><span class="step-dot">2</span><span>We will process and prepare your items for shipment.</span></li>
+            <li><span class="step-dot">3</span><span>A shipping confirmation with tracking details will be sent once dispatched.</span></li>
+            <li><span class="step-dot">4</span><span>Your order will arrive within 3–5 business days.</span></li>
+          </ul>
+        </div>
+
+        <!-- Actions -->
+        <div class="confirmation-actions">
+          <a href="/" class="btn-continue-shopping">&#8592; Continue Shopping</a>
+          <button class="btn-print-order" onclick="window.print()">&#128438; Print Receipt</button>
+        </div>
+      `;
+    }
+
+    function renderNoOrder() {
+      const page = document.getElementById('confirmation-page');
+      page.innerHTML = `
+        <div class="no-order-message">
+          <div style="font-size:3rem;margin-bottom:16px;">&#128721;</div>
+          <h2>No Order Found</h2>
+          <p>It looks like you haven't placed an order yet, or your session has expired.</p>
+          <a href="/" class="btn-continue-shopping" style="display:inline-flex;margin-top:20px;">
+            &#8592; Return to Shop
+          </a>
+        </div>
+      `;
+    }
+
+    function init() {
+      try {
+        const orderData = localStorage.getItem('lastOrder');
+        if (orderData) {
+          const order = JSON.parse(orderData);
+          renderConfirmation(order);
+        } else {
+          renderNoOrder();
+        }
+      } catch (e) {
+        renderNoOrder();
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
