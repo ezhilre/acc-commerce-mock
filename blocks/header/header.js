@@ -387,7 +387,7 @@ function renderCartPanel() {
       <button class="cart-clear-btn" type="button">Clear Cart</button>
     `;
     footer.querySelector('.cart-checkout-btn').addEventListener('click', () => {
-      alert('Checkout functionality coming soon!');
+      window.location.href = '/checkout';
     });
     footer.querySelector('.cart-clear-btn').addEventListener('click', () => {
       saveCart([]);
