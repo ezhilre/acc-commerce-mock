@@ -216,4 +216,51 @@ window.addEventListener('authStateChanged', (e) => {
 // product-card.js calls window.digitalData.pushAddToCart() directly before
 // dispatching the event, so listening here would cause a duplicate entry.
 
+// ── Hydrate from auth cookie on page load ─────────────────────────────────────
+/**
+ * Read the auth_user session cookie (written by auth-modal.js on sign-in)
+ * and pre-populate the datalayer user node so that the authenticated state
+ * is preserved across page loads / new tabs without waiting for Firebase.
+ */
+(function hydrateFromCookie() {
+  try {
+    const AUTH_COOKIE_NAME = 'auth_user';
+    const match = document.cookie
+      .split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith(`${AUTH_COOKIE_NAME}=`));
+
+    if (!match) {
+      console.log('[digitalData] No auth cookie found – user is unauthenticated.');
+      return;
+    }
+
+    const cookieData = JSON.parse(
+      decodeURIComponent(match.split('=').slice(1).join('=')),
+    );
+
+    if (!cookieData || !cookieData.uid) return;
+
+    // Populate user node from cookie (uid is used as customerId until
+    // a full profile is available from Firestore / an authStateChanged event)
+    window.digitalData.user = {
+      authenticated: 'authenticated',
+      customerId: cookieData.uid || '',
+      email: cookieData.email || '',
+      firstName: '',   // not stored in cookie; will be enriched by authStateChanged
+      lastName: '',
+      phone: '',
+      country: '',
+      isEmailVerified: cookieData.emailVerified || false,
+      source: 'BETA_COMMERCE',
+    };
+
+    console.group('[digitalData] 🍪 User hydrated from auth cookie');
+    console.table(window.digitalData.user);
+    console.groupEnd();
+  } catch (err) {
+    console.warn('[digitalData] Cookie hydration failed:', err);
+  }
+}());
+
 console.log('[digitalData] ✅ Datalayer initialised', window.digitalData);
