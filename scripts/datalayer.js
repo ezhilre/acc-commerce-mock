@@ -212,21 +212,8 @@ window.addEventListener('authStateChanged', (e) => {
   }
 });
 
-/**
- * product-card dispatches 'addToCart' CustomEvent with product detail.
- * We forward it to the datalayer automatically.
- */
-window.addEventListener('addToCart', (e) => {
-  const { detail } = e;
-  if (!detail) return;
-  pushAddToCart({
-    name: detail.name,
-    sku: detail.sku,
-    price: detail.price,
-    image: detail.image,
-    category: detail.category || '',
-    quantity: detail.quantity || 1,
-  });
-});
+// NOTE: The 'addToCart' CustomEvent listener is intentionally omitted here.
+// product-card.js calls window.digitalData.pushAddToCart() directly before
+// dispatching the event, so listening here would cause a duplicate entry.
 
 console.log('[digitalData] ✅ Datalayer initialised', window.digitalData);
