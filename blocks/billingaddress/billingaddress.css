@@ -11,15 +11,8 @@
   border: 1px solid #e0e0e0;
   border-radius: 10px;
   padding: 28px 28px 20px;
-  margin-top: 120px;
   margin-bottom: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-@media (width >= 900px) {
-  .billingaddress {
-    margin-top: 0;
-  }
 }
 
 .billing-address-header {

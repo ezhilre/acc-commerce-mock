@@ -85,7 +85,7 @@ body.appear {
 }
 
 header {
-  height: var(--nav-height);
+  height: auto;
 }
 
 header .header,
@@ -144,13 +144,13 @@ pre {
 
 main > div {
   margin: 40px 16px;
-  margin-top: 200px; /* Account for fixed header height (top bar ~34px + main nav ~88px + buffer) */
+  margin-top: 140px; /* Account for fixed header: top bar ~34px + nav ~88px + buffer */
 }
 
-/* Adjust spacing for desktop when header is relative positioned */
+/* At desktop, header is position:relative so content flows naturally */
 @media (width >= 900px) {
   main > div {
-    margin-top: 60px;
+    margin-top: 24px;
   }
 }
 
