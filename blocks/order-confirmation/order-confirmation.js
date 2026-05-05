@@ -61,7 +61,7 @@ export default function decorate(block) {
             <div class="order-item-sku">SKU: ${item.sku || '—'}</div>
             <div class="order-item-qty">Qty: ${item.quantity || 1}</div>
           </div>
-          <div class="order-item-price">$${(parseFloat(item.price || 0) * (parseInt(item.quantity, 10) || 1)).toFixed(2)}</div>
+          <div class="order-item-price">&#8377;${(parseFloat(item.price || 0) * (parseInt(item.quantity, 10) || 1)).toFixed(2)}</div>
         </div>
       `).join('')
     : '<p class="order-no-items">No items in this order.</p>';
@@ -147,19 +147,8 @@ export default function decorate(block) {
         <div class="order-items-list">${itemsHTML}</div>
         <div class="order-total-row">
           <span>Total</span>
-          <span class="order-total-amount">$${parseFloat(total).toFixed(2)}</span>
+          <span class="order-total-amount">&#8377;${parseFloat(total).toFixed(2)}</span>
         </div>
-      </div>
-
-      <!-- What happens next -->
-      <div class="order-next-steps">
-        <h3 class="order-next-title">&#128336; What happens next?</h3>
-        <ol class="order-next-list">
-          <li>You will receive an order confirmation email shortly.</li>
-          <li>We will process and prepare your items for shipment.</li>
-          <li>You will receive a shipping confirmation with tracking details.</li>
-          <li>Your order will be delivered within 3–5 business days.</li>
-        </ol>
       </div>
 
       <!-- Actions -->

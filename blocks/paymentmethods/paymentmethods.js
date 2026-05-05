@@ -272,7 +272,7 @@ export default function decorate(block) {
       }
     })();
 
-    const total = cart.reduce((s, i) => s + (parseFloat(i.price) || 0) * (parseInt(i.quantity, 10) || 1), 0);
+    const total = cart.reduce((s, i) => s + (parseFloat((i.price || '0').toString().replace(/[^0-9.]/g, '')) || 0) * (parseInt(i.quantity, 10) || 1), 0);
 
     const orderData = {
       orderId: generateOrderId(),
