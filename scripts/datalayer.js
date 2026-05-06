@@ -49,6 +49,20 @@ window.digitalData = window.digitalData || {
 // to digitalData.orderConfirmation once the order is placed.
 let _cartId = '';
 
+// ── sessionStorage helpers ────────────────────────────────────────────────────
+
+function saveCartToSession() {
+  try {
+    sessionStorage.setItem('digitalData_cartItems', JSON.stringify(window.digitalData.cart.items));
+  } catch (e) { /* quota exceeded – silently ignore */ }
+}
+
+function saveOrderConfirmationToSession(data) {
+  try {
+    sessionStorage.setItem('digitalData_orderConfirmation', JSON.stringify(data));
+  } catch (e) { /* quota exceeded – silently ignore */ }
+}
+
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 /**
@@ -177,6 +191,7 @@ function pushAddToCart(item) {
   };
 
   window.digitalData.cart.items.push(cartItem);
+  saveCartToSession();
 
   const eventObj = {
     eventId: crypto.randomUUID(),
@@ -212,6 +227,7 @@ function clearCart() {
   window.digitalData.cart.items = [];
   _cartId = '';
   sessionStorage.removeItem('digitalData_cartId');
+  sessionStorage.removeItem('digitalData_cartItems');
 
   const eventObj = {
     eventId: crypto.randomUUID(),
@@ -272,8 +288,9 @@ function pushOrderConfirmation(orderData) {
     paymentStatus: 'SUCCESS',
   };
 
-  // Populate the persistent orderConfirmation node on digitalData
+  // Populate the persistent orderConfirmation node on digitalData and sessionStorage
   window.digitalData.orderConfirmation = { ...orderConfirmation };
+  saveOrderConfirmationToSession(orderConfirmation);
 
   const eventObj = {
     eventId: crypto.randomUUID(),
@@ -349,18 +366,47 @@ window.addEventListener('clearCart', () => {
   clearCart();
 });
 
-// ── Hydrate cartId from sessionStorage on page load ──────────────────────────
+// ── Hydrate cart and orderConfirmation from sessionStorage on page load ───────
 /**
- * Restore cartId into the module-level _cartId variable so that cart state
- * persists across page navigations (product page → checkout → order-confirmation).
+ * Restore cartId, cart.items, and orderConfirmation from sessionStorage so
+ * that all state persists across page navigations.
  * cartId is intentionally NOT stored on digitalData.cart; it surfaces only in
  * the ORDER_CONFIRMATION event and digitalData.orderConfirmation node.
  */
-(function hydrateCartId() {
-  const stored = sessionStorage.getItem('digitalData_cartId');
-  if (stored) {
-    _cartId = stored;
-    console.log('[digitalData] 🛒 CartId restored from sessionStorage:', stored);
+(function hydrateFromSession() {
+  // Restore cartId
+  const storedCartId = sessionStorage.getItem('digitalData_cartId');
+  if (storedCartId) {
+    _cartId = storedCartId;
+    console.log('[digitalData] 🛒 CartId restored from sessionStorage:', storedCartId);
+  }
+
+  // Restore cart items
+  try {
+    const storedItems = sessionStorage.getItem('digitalData_cartItems');
+    if (storedItems) {
+      const parsed = JSON.parse(storedItems);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        window.digitalData.cart.items = parsed;
+        console.log('[digitalData] 🛒 Cart items restored from sessionStorage:', parsed.length, 'item(s)');
+      }
+    }
+  } catch (e) {
+    console.warn('[digitalData] Failed to restore cart items from sessionStorage:', e);
+  }
+
+  // Restore orderConfirmation
+  try {
+    const storedOrder = sessionStorage.getItem('digitalData_orderConfirmation');
+    if (storedOrder) {
+      const parsed = JSON.parse(storedOrder);
+      if (parsed && parsed.orderId) {
+        window.digitalData.orderConfirmation = parsed;
+        console.log('[digitalData] ✅ orderConfirmation restored from sessionStorage:', parsed.orderId);
+      }
+    }
+  } catch (e) {
+    console.warn('[digitalData] Failed to restore orderConfirmation from sessionStorage:', e);
   }
 }());
 
