@@ -22,7 +22,7 @@
  *  window.digitalData.push(event)                  – generic event push
  */
 
-import { KAFKA_REST_PROXY_BASE, KAFKA_CART_TOPIC } from './config.js';
+import { KAFKA_REST_PROXY_BASE, KAFKA_CART_TOPIC, KAFKA_ORDER_TOPIC } from './config.js';
 
 // ── Initialise the global object ─────────────────────────────────────────────
 
@@ -154,6 +154,92 @@ async function publishCartEventToKafka(cartItem, cartId, cartItems) {
     console.groupEnd();
   } catch (networkErr) {
     console.error('[digitalData] ❌ Kafka cart publish – network error:', networkErr);
+  }
+}
+
+/** Full REST Proxy endpoint for order confirmation events */
+const KAFKA_ORDER_REST_PROXY_URL = `${KAFKA_REST_PROXY_BASE}/topics/${KAFKA_ORDER_TOPIC}`;
+
+/**
+ * Build and publish an ORDER_CONFIRMATION event to Kafka via the AWS API Gateway
+ * REST Proxy. Mirrors the same pattern used for ADD_TO_CART and BETA_COMMERCE_USER_SIGNUP.
+ *
+ * @param {object} orderConfirmation  – the fully-resolved orderConfirmation object
+ */
+async function publishOrderEventToKafka(orderConfirmation) {
+  const { user } = window.digitalData;
+
+  const eventPayload = {
+    eventType: 'ORDER_CONFIRMATION',
+    timestamp: new Date().toISOString(),
+    _id: crypto.randomUUID(),
+    SOURCE: 'BETA_COMMERCE',
+    customer: {
+      customerId: user.customerId || '',
+      email: user.email || '',
+      authenticated: user.authenticated || 'unauthenticated',
+    },
+    order: {
+      orderId: orderConfirmation.orderId || '',
+      cartId: orderConfirmation.cartId || '',
+      date: orderConfirmation.date || new Date().toISOString(),
+      total: orderConfirmation.total || '0.00',
+      currency: orderConfirmation.currency || 'INR',
+      itemCount: orderConfirmation.itemCount || 0,
+      totalQuantity: (orderConfirmation.items || []).reduce((sum, i) => sum + (i.quantity || 1), 0),
+      paymentStatus: orderConfirmation.paymentStatus || 'SUCCESS',
+      payment: {
+        method: orderConfirmation.payment ? orderConfirmation.payment.method : 'credit-card',
+        last4: orderConfirmation.payment ? orderConfirmation.payment.last4 : '',
+        cardType: orderConfirmation.payment ? (orderConfirmation.payment.cardType || '') : '',
+        status: orderConfirmation.payment ? (orderConfirmation.payment.status || 'SUCCESS') : 'SUCCESS',
+      },
+      billingAddress: orderConfirmation.billingAddress || {},
+      shippingAddress: orderConfirmation.shippingAddress || {},
+      items: (orderConfirmation.items || []).map((i) => ({
+        sku: i.sku,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity,
+        category: i.category,
+        image: i.image,
+      })),
+    },
+  };
+
+  console.group('[digitalData] 🚀 Publishing ORDER_CONFIRMATION event to Kafka');
+  console.log('Topic   :', KAFKA_ORDER_TOPIC);
+  console.log('Endpoint:', KAFKA_ORDER_REST_PROXY_URL);
+  console.log('Payload :', JSON.stringify(eventPayload, null, 2));
+  console.groupEnd();
+
+  try {
+    const response = await fetch(KAFKA_ORDER_REST_PROXY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(eventPayload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `[digitalData] ❌ Kafka order publish failed — HTTP ${response.status}:`,
+        errorText,
+      );
+      return;
+    }
+
+    const result = await response.json().catch(() => ({}));
+    console.group('[digitalData] ✅ Kafka order publish succeeded');
+    console.log('HTTP Status :', response.status);
+    console.log('Response    :', result);
+    console.log('Event sent  :', JSON.stringify(eventPayload, null, 2));
+    console.groupEnd();
+  } catch (networkErr) {
+    console.error('[digitalData] ❌ Kafka order publish – network error:', networkErr);
   }
 }
 
@@ -413,6 +499,9 @@ function pushOrderConfirmation(orderData) {
   };
 
   pushEvent(eventObj);
+
+  // Publish to Kafka (non-blocking)
+  publishOrderEventToKafka(orderConfirmation);
 
   console.group('[digitalData] ✅ Order Confirmation');
   console.log('Order ID      :', orderConfirmation.orderId);

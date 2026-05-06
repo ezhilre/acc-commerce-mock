@@ -27,3 +27,6 @@ export const KAFKA_SIGNUP_TOPIC = 'beta-commerce-signup-events';
 
 /** Kafka topic name for beta-commerce cart events */
 export const KAFKA_CART_TOPIC = 'beta-commerce-cart-events';
+
+/** Kafka topic name for beta-commerce order confirmation events */
+export const KAFKA_ORDER_TOPIC = 'beta-commerce-order-events';
