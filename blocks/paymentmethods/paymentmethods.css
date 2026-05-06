@@ -68,47 +68,21 @@
   font-size: 1.1rem;
 }
 
-/* ── Card logos ── */
-.card-logos {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 22px;
-  align-items: center;
-}
-
-.card-logo {
-  padding: 5px 12px;
-  border-radius: 5px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  border: 1px solid transparent;
-}
-
-.card-logo.visa {
-  background: #1a1f71;
-  color: #fff;
-}
-
-.card-logo.mastercard {
-  background: #eb001b;
-  color: #fff;
-}
-
-.card-logo.amex {
-  background: #007bc1;
-  color: #fff;
-}
-
 /* ── Form rows (scoped to payment-methods-content) ── */
 .payment-methods-content .form-row {
   margin-bottom: 18px;
+}
+
+/* Narrow fields for card name and card number */
+.payment-methods-content .form-row.narrow-field {
+  max-width: 380px;
 }
 
 .payment-methods-content .form-row.two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  max-width: 380px;
 }
 
 .payment-methods-content .form-group {
@@ -255,13 +229,15 @@
 }
 
 .place-order-btn {
-  width: 100%;
-  padding: 16px;
+  display: inline-block;
+  width: auto;
+  min-width: 200px;
+  padding: 14px 32px;
   background: var(--adobe-red, #eb1000);
   color: #fff;
   border: none;
   border-radius: 8px;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   letter-spacing: 0.5px;
@@ -289,7 +265,7 @@
   margin-top: 14px;
   font-size: 0.8rem;
   color: #888;
-  text-align: center;
+  text-align: left;
   line-height: 1.5;
 }
 

@@ -54,17 +54,12 @@ export default function decorate(block) {
     </div>
     <div class="payment-methods-content">
       <div class="payment-panel credit-card-panel active" id="credit-card-panel">
-        <div class="card-logos">
-          <span class="card-logo visa" title="Visa">VISA</span>
-          <span class="card-logo mastercard" title="Mastercard">MC</span>
-          <span class="card-logo amex" title="American Express">AMEX</span>
-        </div>
-        <div class="form-row">
+        <div class="form-row narrow-field">
           <label for="card-name" class="form-label">Name on Card <span class="required">*</span></label>
           <input type="text" id="card-name" name="card-name" class="form-input" placeholder="John Doe" autocomplete="cc-name">
           <span class="field-error" id="card-name-error"></span>
         </div>
-        <div class="form-row">
+        <div class="form-row narrow-field">
           <label for="card-number" class="form-label">Card Number <span class="required">*</span></label>
           <div class="card-number-wrapper">
             <input type="text" id="card-number" name="card-number" class="form-input" placeholder="1234 5678 9012 3456" autocomplete="cc-number" maxlength="19" inputmode="numeric">
