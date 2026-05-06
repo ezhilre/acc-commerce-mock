@@ -185,17 +185,27 @@ function pushAddToCart(item) {
   // Keep cartId visible on the cart object
   window.digitalData.cart.cartId = _cartId;
 
-  const cartItem = {
-    name: item.name || 'Unknown Product',
-    sku: item.sku || '',
-    price: item.price || '0.00',
-    image: item.image || '',
-    category: item.category || '',
-    quantity: item.quantity || 1,
-    addedAt: new Date().toISOString(),
-  };
+  // Check if an item with the same SKU already exists – if so, increment quantity
+  const existingItem = window.digitalData.cart.items.find((i) => i.sku && i.sku === (item.sku || ''));
 
-  window.digitalData.cart.items.push(cartItem);
+  let cartItem;
+  if (existingItem) {
+    existingItem.quantity += (item.quantity || 1);
+    existingItem.addedAt = new Date().toISOString();
+    cartItem = existingItem;
+  } else {
+    cartItem = {
+      name: item.name || 'Unknown Product',
+      sku: item.sku || '',
+      price: item.price || '0.00',
+      image: item.image || '',
+      category: item.category || '',
+      quantity: item.quantity || 1,
+      addedAt: new Date().toISOString(),
+    };
+    window.digitalData.cart.items.push(cartItem);
+  }
+
   saveCartToSession();
 
   const eventObj = {
