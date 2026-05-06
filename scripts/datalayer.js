@@ -8,7 +8,8 @@
  *  window.digitalData = {
  *    user:  { authenticated, customerId, email, firstName, lastName,
  *             phone, country, isEmailVerified, source },
- *    cart:  { items: [] },
+ *    cart:  { items: [] },                        // cartId intentionally excluded
+ *    orderConfirmation: {},                        // populated on order-confirmation page
  *    events: []          // append-only event log
  *  }
  *
@@ -36,11 +37,17 @@ window.digitalData = window.digitalData || {
     source: '',
   },
   cart: {
-    cartId: '',
     items: [],
   },
+  orderConfirmation: {},
   events: [],
 };
+
+// ── Internal cartId state (not exposed on cart object) ───────────────────────
+// cartId is generated when the first item is added to cart and persisted in
+// sessionStorage. It is NOT stored on digitalData.cart; instead it is moved
+// to digitalData.orderConfirmation once the order is placed.
+let _cartId = '';
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
@@ -147,13 +154,13 @@ function clearUser() {
  */
 function pushAddToCart(item) {
   // ── Generate / restore cartId ──────────────────────────────────────────────
-  if (!window.digitalData.cart.cartId) {
+  if (!_cartId) {
     const storedCartId = sessionStorage.getItem('digitalData_cartId');
     if (storedCartId) {
-      window.digitalData.cart.cartId = storedCartId;
+      _cartId = storedCartId;
     } else {
       const newCartId = `CART-${crypto.randomUUID()}`;
-      window.digitalData.cart.cartId = newCartId;
+      _cartId = newCartId;
       sessionStorage.setItem('digitalData_cartId', newCartId);
       console.log('[digitalData] 🆕 New cartId generated:', newCartId);
     }
@@ -177,7 +184,6 @@ function pushAddToCart(item) {
     source: 'BETA_COMMERCE',
     product: { ...cartItem },
     cart: {
-      cartId: window.digitalData.cart.cartId,
       totalItems: window.digitalData.cart.items.length,
       items: [...window.digitalData.cart.items],
     },
@@ -188,7 +194,7 @@ function pushAddToCart(item) {
 
   console.group('[digitalData] 🛒 Add-to-Cart');
   console.table(cartItem);
-  console.log('Cart ID:', window.digitalData.cart.cartId);
+  console.log('Cart ID (internal):', _cartId);
   console.log('Cart total items:', window.digitalData.cart.items.length);
   console.groupEnd();
 }
@@ -201,10 +207,10 @@ function pushAddToCart(item) {
  */
 function clearCart() {
   const clearedItems = [...window.digitalData.cart.items];
-  const clearedCartId = window.digitalData.cart.cartId;
+  const clearedCartId = _cartId;
 
   window.digitalData.cart.items = [];
-  window.digitalData.cart.cartId = '';
+  _cartId = '';
   sessionStorage.removeItem('digitalData_cartId');
 
   const eventObj = {
@@ -213,7 +219,7 @@ function clearCart() {
     source: 'BETA_COMMERCE',
     clearedItems,
     cart: {
-      cartId: clearedCartId,
+      clearedCartId,
       totalItems: 0,
       items: [],
     },
@@ -243,36 +249,49 @@ function clearCart() {
  * @param {object}  [orderData.paymentData]     – payment method summary
  */
 function pushOrderConfirmation(orderData) {
+  // cartId: prefer value passed in orderData, otherwise use the module-level
+  // _cartId that was generated when items were added to cart.
+  const resolvedCartId = orderData.cartId || _cartId || sessionStorage.getItem('digitalData_cartId') || '';
+
+  const orderConfirmation = {
+    orderId: orderData.orderId || '',
+    cartId: resolvedCartId,
+    date: orderData.date || new Date().toISOString(),
+    total: orderData.total || '0.00',
+    currency: orderData.currency || 'INR',
+    itemCount: (orderData.items || []).length,
+    items: orderData.items || [],
+    billingAddress: orderData.billingAddress || {},
+    shippingAddress: orderData.shippingAddress || {},
+    payment: {
+      method: orderData.paymentData ? orderData.paymentData.method : 'credit-card',
+      last4: orderData.paymentData ? orderData.paymentData.last4 : '',
+      cardType: orderData.paymentData ? (orderData.paymentData.cardType || '') : '',
+      status: 'SUCCESS',
+    },
+    paymentStatus: 'SUCCESS',
+  };
+
+  // Populate the persistent orderConfirmation node on digitalData
+  window.digitalData.orderConfirmation = { ...orderConfirmation };
+
   const eventObj = {
     eventId: crypto.randomUUID(),
     eventType: 'ORDER_CONFIRMATION',
     source: 'BETA_COMMERCE',
-    paymentStatus: 'SUCCESS',
-    order: {
-      orderId: orderData.orderId || '',
-      cartId: orderData.cartId || '',
-      date: orderData.date || new Date().toISOString(),
-      total: orderData.total || '0.00',
-      currency: orderData.currency || 'INR',
-      itemCount: (orderData.items || []).length,
-      items: orderData.items || [],
-      billingAddress: orderData.billingAddress || {},
-      shippingAddress: orderData.shippingAddress || {},
-      payment: {
-        method: orderData.paymentData ? orderData.paymentData.method : 'credit-card',
-        last4: orderData.paymentData ? orderData.paymentData.last4 : '',
-        status: 'SUCCESS',
-      },
-    },
+    orderConfirmation,
     user: { ...window.digitalData.user },
   };
 
   pushEvent(eventObj);
 
   console.group('[digitalData] ✅ Order Confirmation');
-  console.log('Order ID:', orderData.orderId);
-  console.log('Cart ID :', orderData.cartId);
-  console.log('Payment Status: SUCCESS');
+  console.log('Order ID      :', orderConfirmation.orderId);
+  console.log('Cart ID       :', orderConfirmation.cartId);
+  console.log('Total         :', orderConfirmation.currency, orderConfirmation.total);
+  console.log('Payment Method:', orderConfirmation.payment.method);
+  console.log('Last 4        :', orderConfirmation.payment.last4);
+  console.log('Payment Status:', orderConfirmation.paymentStatus);
   console.table(orderData.items || []);
   console.groupEnd();
 }
@@ -332,13 +351,15 @@ window.addEventListener('clearCart', () => {
 
 // ── Hydrate cartId from sessionStorage on page load ──────────────────────────
 /**
- * Restore cartId from sessionStorage so that cart state persists across
- * page navigations (product page → checkout → order-confirmation).
+ * Restore cartId into the module-level _cartId variable so that cart state
+ * persists across page navigations (product page → checkout → order-confirmation).
+ * cartId is intentionally NOT stored on digitalData.cart; it surfaces only in
+ * the ORDER_CONFIRMATION event and digitalData.orderConfirmation node.
  */
 (function hydrateCartId() {
   const stored = sessionStorage.getItem('digitalData_cartId');
   if (stored) {
-    window.digitalData.cart.cartId = stored;
+    _cartId = stored;
     console.log('[digitalData] 🛒 CartId restored from sessionStorage:', stored);
   }
 }());
