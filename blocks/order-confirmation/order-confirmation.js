@@ -42,8 +42,42 @@ export default function decorate(block) {
     return;
   }
 
+  // ── Push ORDER_CONFIRMATION event to datalayer ────────────────────────────
+  if (window.digitalData && window.digitalData.pushOrderConfirmation) {
+    window.digitalData.pushOrderConfirmation(order);
+  } else if (window.digitalData && window.digitalData.push) {
+    // Fallback: use generic push if pushOrderConfirmation isn't available yet
+    window.digitalData.push({
+      eventId: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `evt-${Date.now()}`,
+      eventType: 'ORDER_CONFIRMATION',
+      source: 'BETA_COMMERCE',
+      paymentStatus: 'SUCCESS',
+      order: {
+        orderId: order.orderId || '',
+        cartId: order.cartId || '',
+        date: order.date || new Date().toISOString(),
+        total: order.total || '0.00',
+        currency: order.currency || 'INR',
+        itemCount: (order.items || []).length,
+        items: order.items || [],
+        billingAddress: order.billingAddress || {},
+        shippingAddress: order.shippingAddress || {},
+        payment: {
+          method: order.paymentData ? order.paymentData.method : 'credit-card',
+          last4: order.paymentData ? order.paymentData.last4 : '',
+          status: 'SUCCESS',
+        },
+      },
+      user: window.digitalData.user ? { ...window.digitalData.user } : {},
+    });
+  }
+
+  // ── Clear cartId from sessionStorage — cart is now converted to order ─────
+  sessionStorage.removeItem('digitalData_cartId');
+
   const {
     orderId,
+    cartId = '',
     date,
     billingAddress,
     shippingAddress,
@@ -87,6 +121,10 @@ export default function decorate(block) {
           <span class="order-id-label">Order ID:</span>
           <span class="order-id-value">${orderId}</span>
         </div>
+        ${cartId ? `<div class="order-id-badge" style="margin-top:6px;opacity:0.75;font-size:0.8em;">
+          <span class="order-id-label">Cart ID:</span>
+          <span class="order-id-value">${cartId}</span>
+        </div>` : ''}
         <div class="order-date">${formatDate(date)}</div>
       </div>
 

@@ -269,14 +269,21 @@ export default function decorate(block) {
 
     const total = cart.reduce((s, i) => s + (parseFloat((i.price || '0').toString().replace(/[^0-9.]/g, '')) || 0) * (parseInt(i.quantity, 10) || 1), 0);
 
+    // ── Retrieve cartId from datalayer / sessionStorage ──
+    const cartId = (window.digitalData && window.digitalData.cart && window.digitalData.cart.cartId)
+      || sessionStorage.getItem('digitalData_cartId')
+      || '';
+
     const orderData = {
       orderId: generateOrderId(),
+      cartId,
       date: new Date().toISOString(),
       billingAddress,
       shippingAddress,
       paymentData,
       items: cart,
       total: total.toFixed(2),
+      currency: 'INR',
     };
 
     try {
@@ -284,6 +291,33 @@ export default function decorate(block) {
       localStorage.removeItem('acc_commerce_cart');
       localStorage.removeItem('cart');
     } catch (e) { /* ignore */ }
+
+    // ── Push ORDER_PLACED event to datalayer ──
+    if (window.digitalData && window.digitalData.push) {
+      window.digitalData.push({
+        eventId: crypto.randomUUID(),
+        eventType: 'ORDER_PLACED',
+        source: 'BETA_COMMERCE',
+        paymentStatus: 'SUCCESS',
+        order: {
+          orderId: orderData.orderId,
+          cartId: orderData.cartId,
+          date: orderData.date,
+          total: orderData.total,
+          currency: orderData.currency,
+          itemCount: cart.length,
+          items: cart,
+          billingAddress,
+          shippingAddress,
+          payment: {
+            method: paymentData.method,
+            last4: paymentData.last4,
+            status: 'SUCCESS',
+          },
+        },
+        user: window.digitalData.user ? { ...window.digitalData.user } : {},
+      });
+    }
 
     // ── Navigate ──
     placeOrderBtn.textContent = 'Placing Order...';

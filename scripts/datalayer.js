@@ -13,10 +13,12 @@
  *  }
  *
  * Public API:
- *  window.digitalData.setUser(userData)   – called after successful login/signup
- *  window.digitalData.clearUser()         – called after sign-out
- *  window.digitalData.pushAddToCart(item) – called when Add to Cart is clicked
- *  window.digitalData.push(event)         – generic event push
+ *  window.digitalData.setUser(userData)            – called after successful login/signup
+ *  window.digitalData.clearUser()                  – called after sign-out
+ *  window.digitalData.pushAddToCart(item)          – called when Add to Cart is clicked; generates cartId on first call
+ *  window.digitalData.clearCart()                  – empties cart and clears cartId from sessionStorage
+ *  window.digitalData.pushOrderConfirmation(order) – called on order-confirmation page load
+ *  window.digitalData.push(event)                  – generic event push
  */
 
 // ── Initialise the global object ─────────────────────────────────────────────
@@ -34,6 +36,7 @@ window.digitalData = window.digitalData || {
     source: '',
   },
   cart: {
+    cartId: '',
     items: [],
   },
   events: [],
@@ -131,6 +134,8 @@ function clearUser() {
 
 /**
  * Push an add-to-cart event and append the item to digitalData.cart.items.
+ * A unique cartId is generated the first time an item is added and persisted
+ * in sessionStorage so it survives page navigations within the same session.
  *
  * @param {object} item
  * @param {string}  item.name        – product name
@@ -141,6 +146,19 @@ function clearUser() {
  * @param {number}  [item.quantity]  – defaults to 1
  */
 function pushAddToCart(item) {
+  // ── Generate / restore cartId ──────────────────────────────────────────────
+  if (!window.digitalData.cart.cartId) {
+    const storedCartId = sessionStorage.getItem('digitalData_cartId');
+    if (storedCartId) {
+      window.digitalData.cart.cartId = storedCartId;
+    } else {
+      const newCartId = `CART-${crypto.randomUUID()}`;
+      window.digitalData.cart.cartId = newCartId;
+      sessionStorage.setItem('digitalData_cartId', newCartId);
+      console.log('[digitalData] 🆕 New cartId generated:', newCartId);
+    }
+  }
+
   const cartItem = {
     name: item.name || 'Unknown Product',
     sku: item.sku || '',
@@ -159,6 +177,7 @@ function pushAddToCart(item) {
     source: 'BETA_COMMERCE',
     product: { ...cartItem },
     cart: {
+      cartId: window.digitalData.cart.cartId,
       totalItems: window.digitalData.cart.items.length,
       items: [...window.digitalData.cart.items],
     },
@@ -169,10 +188,8 @@ function pushAddToCart(item) {
 
   console.group('[digitalData] 🛒 Add-to-Cart');
   console.table(cartItem);
-  console.log(
-    'Cart total items:',
-    window.digitalData.cart.items.length,
-  );
+  console.log('Cart ID:', window.digitalData.cart.cartId);
+  console.log('Cart total items:', window.digitalData.cart.items.length);
   console.groupEnd();
 }
 
@@ -184,7 +201,11 @@ function pushAddToCart(item) {
  */
 function clearCart() {
   const clearedItems = [...window.digitalData.cart.items];
+  const clearedCartId = window.digitalData.cart.cartId;
+
   window.digitalData.cart.items = [];
+  window.digitalData.cart.cartId = '';
+  sessionStorage.removeItem('digitalData_cartId');
 
   const eventObj = {
     eventId: crypto.randomUUID(),
@@ -192,6 +213,7 @@ function clearCart() {
     source: 'BETA_COMMERCE',
     clearedItems,
     cart: {
+      cartId: clearedCartId,
       totalItems: 0,
       items: [],
     },
@@ -203,12 +225,65 @@ function clearCart() {
   console.log('[digitalData] 🗑️ Cart cleared. Items removed:', clearedItems.length);
 }
 
+// ── Order confirmation helper ─────────────────────────────────────────────────
+
+/**
+ * Push an ORDER_CONFIRMATION event to the datalayer.
+ * Called from the order-confirmation block after a successful payment.
+ *
+ * @param {object} orderData
+ * @param {string}  orderData.orderId           – unique order identifier
+ * @param {string}  [orderData.cartId]          – cart ID that was converted
+ * @param {string}  [orderData.date]            – ISO timestamp of the order
+ * @param {Array}   [orderData.items]           – ordered items array
+ * @param {string}  [orderData.total]           – order total string
+ * @param {string}  [orderData.currency]        – currency code (default: INR)
+ * @param {object}  [orderData.billingAddress]  – billing address object
+ * @param {object}  [orderData.shippingAddress] – shipping address object
+ * @param {object}  [orderData.paymentData]     – payment method summary
+ */
+function pushOrderConfirmation(orderData) {
+  const eventObj = {
+    eventId: crypto.randomUUID(),
+    eventType: 'ORDER_CONFIRMATION',
+    source: 'BETA_COMMERCE',
+    paymentStatus: 'SUCCESS',
+    order: {
+      orderId: orderData.orderId || '',
+      cartId: orderData.cartId || '',
+      date: orderData.date || new Date().toISOString(),
+      total: orderData.total || '0.00',
+      currency: orderData.currency || 'INR',
+      itemCount: (orderData.items || []).length,
+      items: orderData.items || [],
+      billingAddress: orderData.billingAddress || {},
+      shippingAddress: orderData.shippingAddress || {},
+      payment: {
+        method: orderData.paymentData ? orderData.paymentData.method : 'credit-card',
+        last4: orderData.paymentData ? orderData.paymentData.last4 : '',
+        status: 'SUCCESS',
+      },
+    },
+    user: { ...window.digitalData.user },
+  };
+
+  pushEvent(eventObj);
+
+  console.group('[digitalData] ✅ Order Confirmation');
+  console.log('Order ID:', orderData.orderId);
+  console.log('Cart ID :', orderData.cartId);
+  console.log('Payment Status: SUCCESS');
+  console.table(orderData.items || []);
+  console.groupEnd();
+}
+
 // ── Attach public API ─────────────────────────────────────────────────────────
 
 window.digitalData.setUser = setUser;
 window.digitalData.clearUser = clearUser;
 window.digitalData.pushAddToCart = pushAddToCart;
 window.digitalData.clearCart = clearCart;
+window.digitalData.pushOrderConfirmation = pushOrderConfirmation;
 window.digitalData.push = pushEvent;
 
 // ── Listen for global events from other blocks ────────────────────────────────
@@ -254,6 +329,19 @@ window.addEventListener('authStateChanged', (e) => {
 window.addEventListener('clearCart', () => {
   clearCart();
 });
+
+// ── Hydrate cartId from sessionStorage on page load ──────────────────────────
+/**
+ * Restore cartId from sessionStorage so that cart state persists across
+ * page navigations (product page → checkout → order-confirmation).
+ */
+(function hydrateCartId() {
+  const stored = sessionStorage.getItem('digitalData_cartId');
+  if (stored) {
+    window.digitalData.cart.cartId = stored;
+    console.log('[digitalData] 🛒 CartId restored from sessionStorage:', stored);
+  }
+}());
 
 // ── Hydrate from auth cookie on page load ─────────────────────────────────────
 /**
