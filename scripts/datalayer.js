@@ -8,7 +8,7 @@
  *  window.digitalData = {
  *    user:  { authenticated, customerId, email, firstName, lastName,
  *             phone, country, isEmailVerified, source },
- *    cart:  { items: [] },                        // cartId intentionally excluded
+ *    cart:  { cartId: '', items: [] },
  *    orderConfirmation: {},                        // populated on order-confirmation page
  *    events: []          // append-only event log
  *  }
@@ -37,16 +37,17 @@ window.digitalData = window.digitalData || {
     source: '',
   },
   cart: {
+    cartId: '',
     items: [],
   },
   orderConfirmation: {},
   events: [],
 };
 
-// ── Internal cartId state (not exposed on cart object) ───────────────────────
+// ── Internal cartId state ────────────────────────────────────────────────────
 // cartId is generated when the first item is added to cart and persisted in
-// sessionStorage. It is NOT stored on digitalData.cart; instead it is moved
-// to digitalData.orderConfirmation once the order is placed.
+// sessionStorage. It is mirrored on digitalData.cart.cartId for visibility,
+// and also appears in digitalData.orderConfirmation once the order is placed.
 let _cartId = '';
 
 // ── sessionStorage helpers ────────────────────────────────────────────────────
@@ -54,6 +55,7 @@ let _cartId = '';
 function saveCartToSession() {
   try {
     sessionStorage.setItem('digitalData_cartItems', JSON.stringify(window.digitalData.cart.items));
+    sessionStorage.setItem('digitalData_cartId', window.digitalData.cart.cartId || '');
   } catch (e) { /* quota exceeded – silently ignore */ }
 }
 
@@ -180,6 +182,9 @@ function pushAddToCart(item) {
     }
   }
 
+  // Keep cartId visible on the cart object
+  window.digitalData.cart.cartId = _cartId;
+
   const cartItem = {
     name: item.name || 'Unknown Product',
     sku: item.sku || '',
@@ -199,6 +204,7 @@ function pushAddToCart(item) {
     source: 'BETA_COMMERCE',
     product: { ...cartItem },
     cart: {
+      cartId: _cartId,
       totalItems: window.digitalData.cart.items.length,
       items: [...window.digitalData.cart.items],
     },
@@ -209,7 +215,7 @@ function pushAddToCart(item) {
 
   console.group('[digitalData] 🛒 Add-to-Cart');
   console.table(cartItem);
-  console.log('Cart ID (internal):', _cartId);
+  console.log('Cart ID:', _cartId);
   console.log('Cart total items:', window.digitalData.cart.items.length);
   console.groupEnd();
 }
@@ -225,6 +231,7 @@ function clearCart() {
   const clearedCartId = _cartId;
 
   window.digitalData.cart.items = [];
+  window.digitalData.cart.cartId = '';
   _cartId = '';
   sessionStorage.removeItem('digitalData_cartId');
   sessionStorage.removeItem('digitalData_cartItems');
@@ -370,14 +377,15 @@ window.addEventListener('clearCart', () => {
 /**
  * Restore cartId, cart.items, and orderConfirmation from sessionStorage so
  * that all state persists across page navigations.
- * cartId is intentionally NOT stored on digitalData.cart; it surfaces only in
- * the ORDER_CONFIRMATION event and digitalData.orderConfirmation node.
+ * cartId is mirrored on digitalData.cart.cartId and also appears in
+ * digitalData.orderConfirmation once the order is placed.
  */
 (function hydrateFromSession() {
   // Restore cartId
   const storedCartId = sessionStorage.getItem('digitalData_cartId');
   if (storedCartId) {
     _cartId = storedCartId;
+    window.digitalData.cart.cartId = storedCartId;
     console.log('[digitalData] 🛒 CartId restored from sessionStorage:', storedCartId);
   }
 
