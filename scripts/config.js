@@ -1,7 +1,7 @@
 /**
- * Firebase Configuration
- * Central config file for all Firebase credentials.
- * Import this wherever Firebase services are needed.
+ * Application Configuration
+ * Central config file for Firebase credentials and shared service endpoints
+ * (Kafka, AWS API Gateway, etc.). Import this wherever these values are needed.
  */
 
 export const firebaseConfig = {
@@ -24,3 +24,6 @@ export const KAFKA_REST_PROXY_BASE = 'https://i3wygncpai.execute-api.eu-west-1.a
 
 /** Kafka topic name for beta-commerce signup events */
 export const KAFKA_SIGNUP_TOPIC = 'beta-commerce-signup-events';
+
+/** Kafka topic name for beta-commerce cart events */
+export const KAFKA_CART_TOPIC = 'beta-commerce-cart-events';

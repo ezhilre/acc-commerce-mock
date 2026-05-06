@@ -22,6 +22,8 @@
  *  window.digitalData.push(event)                  – generic event push
  */
 
+import { KAFKA_REST_PROXY_BASE, KAFKA_CART_TOPIC } from './config.js';
+
 // ── Initialise the global object ─────────────────────────────────────────────
 
 window.digitalData = window.digitalData || {
@@ -63,6 +65,96 @@ function saveOrderConfirmationToSession(data) {
   try {
     sessionStorage.setItem('digitalData_orderConfirmation', JSON.stringify(data));
   } catch (e) { /* quota exceeded – silently ignore */ }
+}
+
+// ── Kafka helpers ─────────────────────────────────────────────────────────────
+
+/** Full REST Proxy endpoint for cart events */
+const KAFKA_CART_REST_PROXY_URL = `${KAFKA_REST_PROXY_BASE}/topics/${KAFKA_CART_TOPIC}`;
+
+/**
+ * Build and publish an ADD_TO_CART event to Kafka via the AWS API Gateway
+ * REST Proxy. Mirrors the same pattern used for BETA_COMMERCE_USER_SIGNUP.
+ *
+ * @param {object} cartItem   – the item that was just added / updated
+ * @param {string} cartId     – current cart ID
+ * @param {Array}  cartItems  – full cart items array at the time of the event
+ */
+async function publishCartEventToKafka(cartItem, cartId, cartItems) {
+  const { user } = window.digitalData;
+
+  const eventPayload = {
+    eventType: 'ADD_TO_CART',
+    timestamp: new Date().toISOString(),
+    _id: crypto.randomUUID(),
+    SOURCE: 'BETA_COMMERCE',
+    customer: {
+      customerId: user.customerId || '',
+      email: user.email || '',
+      authenticated: user.authenticated || 'unauthenticated',
+    },
+    cart: {
+      cartId,
+      totalItems: cartItems.length,
+      totalQuantity: cartItems.reduce((sum, i) => sum + (i.quantity || 1), 0),
+      currency: 'INR',
+      items: cartItems.map((i) => ({
+        sku: i.sku,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity,
+        category: i.category,
+        image: i.image,
+      })),
+    },
+    product: {
+      sku: cartItem.sku,
+      name: cartItem.name,
+      price: cartItem.price,
+      quantity: cartItem.quantity,
+      category: cartItem.category,
+      image: cartItem.image,
+    },
+  };
+
+  const kafkaEnvelope = {
+    records: [{ value: eventPayload }],
+  };
+
+  console.group('[digitalData] 🚀 Publishing ADD_TO_CART event to Kafka');
+  console.log('Topic   :', KAFKA_CART_TOPIC);
+  console.log('Endpoint:', KAFKA_CART_REST_PROXY_URL);
+  console.log('Payload :', JSON.stringify(eventPayload, null, 2));
+  console.groupEnd();
+
+  try {
+    const response = await fetch(KAFKA_CART_REST_PROXY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/vnd.kafka.json.v2+json',
+        Accept: 'application/vnd.kafka.v2+json',
+      },
+      body: JSON.stringify(kafkaEnvelope),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `[digitalData] ❌ Kafka cart publish failed — HTTP ${response.status}:`,
+        errorText,
+      );
+      return;
+    }
+
+    const result = await response.json().catch(() => ({}));
+    console.group('[digitalData] ✅ Kafka cart publish succeeded');
+    console.log('HTTP Status :', response.status);
+    console.log('Response    :', result);
+    console.log('Event sent  :', JSON.stringify(eventPayload, null, 2));
+    console.groupEnd();
+  } catch (networkErr) {
+    console.error('[digitalData] ❌ Kafka cart publish – network error:', networkErr);
+  }
 }
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
@@ -222,6 +314,9 @@ function pushAddToCart(item) {
   };
 
   pushEvent(eventObj);
+
+  // Publish to Kafka (non-blocking)
+  publishCartEventToKafka(cartItem, _cartId, [...window.digitalData.cart.items]);
 
   console.group('[digitalData] 🛒 Add-to-Cart');
   console.table(cartItem);

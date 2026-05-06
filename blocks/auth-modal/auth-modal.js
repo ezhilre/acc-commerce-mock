@@ -16,12 +16,12 @@ import {
   FIREBASE_SDK_BASE,
   KAFKA_REST_PROXY_BASE,
   KAFKA_SIGNUP_TOPIC,
-} from '../../scripts/firebase-config.js';
+} from '../../scripts/config.js';
 
 const MODAL_ID = 'auth-modal-overlay';
 
 // ── Kafka / AWS API Gateway config ────────────────────────────────────────────
-// Base URL and topic are defined in scripts/firebase-config.js
+// Base URL and topic are defined in scripts/config.js
 
 /** Full REST Proxy endpoint: POST to this URL to publish a record to the topic */
 const KAFKA_REST_PROXY_URL = `${KAFKA_REST_PROXY_BASE}/topics/${KAFKA_SIGNUP_TOPIC}`;
