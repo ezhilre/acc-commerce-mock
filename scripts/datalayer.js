@@ -213,14 +213,18 @@ async function publishOrderEventToKafka(orderConfirmation) {
   console.log('Payload :', JSON.stringify(eventPayload, null, 2));
   console.groupEnd();
 
+  const kafkaEnvelope = {
+    records: [{ value: eventPayload }],
+  };
+
   try {
     const response = await fetch(KAFKA_ORDER_REST_PROXY_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+        'Content-Type': 'application/vnd.kafka.json.v2+json',
+        Accept: 'application/vnd.kafka.v2+json',
       },
-      body: JSON.stringify(eventPayload),
+      body: JSON.stringify(kafkaEnvelope),
     });
 
     if (!response.ok) {
