@@ -1,3 +1,90 @@
+import { KAFKA_REST_PROXY_BASE, KAFKA_ORDER_TOPIC } from '../../scripts/config.js';
+
+/**
+ * Publish an ORDER_CONFIRMATION event directly to Kafka via the REST Proxy.
+ * This is called directly from decorate() so it is not subject to the async
+ * datalayer.js load timing — the block owns the publish call.
+ */
+async function publishOrderEventToKafka(order) {
+  const user = (window.digitalData && window.digitalData.user) || {};
+  const resolvedCartId = order.cartId
+    || (window.digitalData && window.digitalData.cart && window.digitalData.cart.cartId)
+    || sessionStorage.getItem('digitalData_cartId')
+    || '';
+
+  const eventPayload = {
+    eventType: 'ORDER_CONFIRMATION',
+    timestamp: new Date().toISOString(),
+    _id: crypto.randomUUID(),
+    SOURCE: 'BETA_COMMERCE',
+    customer: {
+      customerId: user.customerId || '',
+      email: user.email || '',
+      authenticated: user.authenticated || 'unauthenticated',
+    },
+    order: {
+      orderId: order.orderId || '',
+      cartId: resolvedCartId,
+      date: order.date || new Date().toISOString(),
+      total: order.total || '0.00',
+      currency: order.currency || 'INR',
+      itemCount: (order.items || []).length,
+      totalQuantity: (order.items || []).reduce((sum, i) => sum + (i.quantity || 1), 0),
+      paymentStatus: 'SUCCESS',
+      payment: {
+        method: order.paymentData ? order.paymentData.method : 'credit-card',
+        last4: order.paymentData ? order.paymentData.last4 : '',
+        cardType: order.paymentData ? (order.paymentData.cardType || '') : '',
+        status: 'SUCCESS',
+      },
+      billingAddress: order.billingAddress || {},
+      shippingAddress: order.shippingAddress || {},
+      items: (order.items || []).map((i) => ({
+        sku: i.sku,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity,
+        category: i.category,
+        image: i.image,
+      })),
+    },
+  };
+
+  const kafkaEnvelope = { records: [{ value: eventPayload }] };
+  const url = `${KAFKA_REST_PROXY_BASE}/topics/${KAFKA_ORDER_TOPIC}`;
+
+  console.group('[order-confirmation] 🚀 Publishing ORDER_CONFIRMATION event to Kafka');
+  console.log('Topic   :', KAFKA_ORDER_TOPIC);
+  console.log('Endpoint:', url);
+  console.log('Payload :', JSON.stringify(eventPayload, null, 2));
+  console.groupEnd();
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/vnd.kafka.json.v2+json',
+        Accept: 'application/vnd.kafka.v2+json',
+      },
+      body: JSON.stringify(kafkaEnvelope),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`[order-confirmation] ❌ Kafka publish failed — HTTP ${response.status}:`, errText);
+      return;
+    }
+
+    const result = await response.json().catch(() => ({}));
+    console.group('[order-confirmation] ✅ Kafka ORDER_CONFIRMATION published');
+    console.log('HTTP Status :', response.status);
+    console.log('Response    :', result);
+    console.groupEnd();
+  } catch (networkErr) {
+    console.error('[order-confirmation] ❌ Kafka publish – network error:', networkErr);
+  }
+}
+
 function formatDate(isoString) {
   try {
     return new Date(isoString).toLocaleDateString('en-US', {
@@ -42,34 +129,12 @@ export default function decorate(block) {
     return;
   }
 
-  // ── Push ORDER_CONFIRMATION event to datalayer ────────────────────────────
+  // ── Publish ORDER_CONFIRMATION event to Kafka (non-blocking) ─────────────
+  // Called directly here so it is not subject to the async datalayer.js
+  // load timing. Also delegate to datalayer if it is already ready.
+  publishOrderEventToKafka(order);
   if (window.digitalData && window.digitalData.pushOrderConfirmation) {
     window.digitalData.pushOrderConfirmation(order);
-  } else if (window.digitalData && window.digitalData.push) {
-    // Fallback: use generic push if pushOrderConfirmation isn't available yet
-    window.digitalData.push({
-      eventId: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `evt-${Date.now()}`,
-      eventType: 'ORDER_CONFIRMATION',
-      source: 'BETA_COMMERCE',
-      paymentStatus: 'SUCCESS',
-      order: {
-        orderId: order.orderId || '',
-        cartId: order.cartId || '',
-        date: order.date || new Date().toISOString(),
-        total: order.total || '0.00',
-        currency: order.currency || 'INR',
-        itemCount: (order.items || []).length,
-        items: order.items || [],
-        billingAddress: order.billingAddress || {},
-        shippingAddress: order.shippingAddress || {},
-        payment: {
-          method: order.paymentData ? order.paymentData.method : 'credit-card',
-          last4: order.paymentData ? order.paymentData.last4 : '',
-          status: 'SUCCESS',
-        },
-      },
-      user: window.digitalData.user ? { ...window.digitalData.user } : {},
-    });
   }
 
   // ── Clear cartId from sessionStorage — cart is now converted to order ─────
