@@ -513,12 +513,91 @@
       `;
     }
 
+    async function publishToKafka(order) {
+      try {
+        const KAFKA_REST_PROXY_BASE = 'https://i3wygncpai.execute-api.eu-west-1.amazonaws.com/prod';
+        const KAFKA_ORDER_TOPIC = 'beta-commerce-order-placed-events';
+        const user = (window.digitalData && window.digitalData.user) || {};
+
+        const eventPayload = {
+          eventType: 'ORDER_CONFIRMATION',
+          timestamp: new Date().toISOString(),
+          _id: crypto.randomUUID(),
+          SOURCE: 'BETA_COMMERCE',
+          customer: {
+            customerId: user.customerId || '',
+            email: user.email || '',
+            authenticated: user.authenticated || 'unauthenticated',
+          },
+          order: {
+            orderId: order.orderId || '',
+            cartId: order.cartId || sessionStorage.getItem('digitalData_cartId') || '',
+            date: order.date || new Date().toISOString(),
+            total: order.total || '0.00',
+            currency: order.currency || 'INR',
+            itemCount: (order.items || []).length,
+            totalQuantity: (order.items || []).reduce((sum, i) => sum + (i.quantity || 1), 0),
+            paymentStatus: 'SUCCESS',
+            payment: {
+              method: order.paymentData ? order.paymentData.method : 'credit-card',
+              last4: order.paymentData ? order.paymentData.last4 : '',
+              cardType: order.paymentData ? (order.paymentData.cardType || '') : '',
+              status: 'SUCCESS',
+            },
+            billingAddress: order.billingAddress || {},
+            shippingAddress: order.shippingAddress || {},
+            items: (order.items || []).map((i) => ({
+              sku: i.sku,
+              name: i.name,
+              price: i.price,
+              quantity: i.quantity,
+              category: i.category,
+              image: i.image,
+            })),
+          },
+        };
+
+        const kafkaEnvelope = { records: [{ value: eventPayload }] };
+
+        console.group('[order-confirmation] 🚀 Publishing ORDER_CONFIRMATION event to Kafka');
+        console.log('Topic   :', KAFKA_ORDER_TOPIC);
+        console.log('Payload :', JSON.stringify(eventPayload, null, 2));
+        console.groupEnd();
+
+        const response = await fetch(`${KAFKA_REST_PROXY_BASE}/topics/${KAFKA_ORDER_TOPIC}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/vnd.kafka.json.v2+json',
+            Accept: 'application/vnd.kafka.v2+json',
+          },
+          body: JSON.stringify(kafkaEnvelope),
+        });
+
+        if (!response.ok) {
+          const err = await response.text();
+          console.error('[order-confirmation] ❌ Kafka publish failed — HTTP', response.status, err);
+          return;
+        }
+
+        const result = await response.json().catch(() => ({}));
+        console.log('[order-confirmation] ✅ Kafka ORDER_CONFIRMATION published:', result);
+      } catch (networkErr) {
+        console.error('[order-confirmation] ❌ Kafka publish – network error:', networkErr);
+      }
+    }
+
     function init() {
       try {
         const orderData = localStorage.getItem('lastOrder');
         if (orderData) {
           const order = JSON.parse(orderData);
           renderConfirmation(order);
+          // Publish ORDER_CONFIRMATION event to Kafka
+          publishToKafka(order);
+          // Also push to datalayer if available
+          if (window.digitalData && window.digitalData.pushOrderConfirmation) {
+            window.digitalData.pushOrderConfirmation(order);
+          }
         } else {
           renderNoOrder();
         }
