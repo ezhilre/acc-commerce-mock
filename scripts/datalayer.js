@@ -148,7 +148,7 @@ async function publishCartEventToKafka(cartItem, cartId, cartItems) {
   };
 
   const kafkaEnvelope = {
-    records: [{ value: eventPayload }],
+    records: [{ key: resolvedUser.customerId || cartId || cartEventId, value: eventPayload }],
   };
 
   console.group('[digitalData] 🚀 Publishing ADD_TO_CART event to Kafka');
@@ -261,7 +261,7 @@ async function publishOrderEventToKafka(orderConfirmation) {
   console.groupEnd();
 
   const kafkaEnvelope = {
-    records: [{ value: eventPayload }],
+    records: [{ key: resolvedCustomer.customerId || orderConfirmation.orderId || orderEventId, value: eventPayload }],
   };
 
   try {
