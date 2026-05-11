@@ -83,15 +83,45 @@ const KAFKA_CART_REST_PROXY_URL = `${KAFKA_REST_PROXY_BASE}/topics/${KAFKA_CART_
 async function publishCartEventToKafka(cartItem, cartId, cartItems) {
   const { user } = window.digitalData;
 
+  // If the live user node is still unauthenticated (e.g. datalayer not yet
+  // hydrated from cookie), fall back to reading the auth cookie directly so
+  // that customerId and email are never empty when the user IS signed in.
+  const isLiveUserAuthenticated = user && user.authenticated === 'authenticated' && (user.customerId || user.email);
+  let resolvedUser = user || {};
+  if (!isLiveUserAuthenticated) {
+    try {
+      const AUTH_COOKIE_NAME = 'auth_user';
+      const match = document.cookie
+        .split(';')
+        .map((c) => c.trim())
+        .find((c) => c.startsWith(`${AUTH_COOKIE_NAME}=`));
+      if (match) {
+        const cookieData = JSON.parse(decodeURIComponent(match.split('=').slice(1).join('=')));
+        if (cookieData && cookieData.uid) {
+          resolvedUser = {
+            customerId: cookieData.uid || '',
+            email: cookieData.email || '',
+            authenticated: 'authenticated',
+          };
+        }
+      }
+    } catch (e) { /* ignore cookie read errors */ }
+  }
+
+  const cartEventId = crypto.randomUUID();
+
   const eventPayload = {
     eventType: 'ADD_TO_CART',
     timestamp: new Date().toISOString(),
     _id: crypto.randomUUID(),
+    eventId: cartEventId,
     SOURCE: 'BETA_COMMERCE',
+    customerId: resolvedUser.customerId || '',
+    email: resolvedUser.email || '',
     customer: {
-      customerId: user.customerId || '',
-      email: user.email || '',
-      authenticated: user.authenticated || 'unauthenticated',
+      customerId: resolvedUser.customerId || '',
+      email: resolvedUser.email || '',
+      authenticated: resolvedUser.authenticated || 'unauthenticated',
     },
     cart: {
       cartId,
@@ -122,9 +152,12 @@ async function publishCartEventToKafka(cartItem, cartId, cartItems) {
   };
 
   console.group('[digitalData] 🚀 Publishing ADD_TO_CART event to Kafka');
-  console.log('Topic   :', KAFKA_CART_TOPIC);
-  console.log('Endpoint:', KAFKA_CART_REST_PROXY_URL);
-  console.log('Payload :', JSON.stringify(eventPayload, null, 2));
+  console.log('Topic      :', KAFKA_CART_TOPIC);
+  console.log('Endpoint   :', KAFKA_CART_REST_PROXY_URL);
+  console.log('eventId    :', cartEventId);
+  console.log('customerId :', resolvedUser.customerId || '(unauthenticated)');
+  console.log('email      :', resolvedUser.email || '(unauthenticated)');
+  console.log('Payload    :', JSON.stringify(eventPayload, null, 2));
   console.groupEnd();
 
   try {
@@ -169,16 +202,27 @@ const KAFKA_ORDER_REST_PROXY_URL = `${KAFKA_REST_PROXY_BASE}/topics/${KAFKA_ORDE
 async function publishOrderEventToKafka(orderConfirmation) {
   const { user } = window.digitalData;
 
+  // If the live user node is still unauthenticated (Firebase hasn't re-hydrated yet
+  // after the page navigation), fall back to the customer snapshot that was captured
+  // at checkout time and stored alongside the order in localStorage.
+  const isLiveUserAuthenticated = user && user.authenticated === 'authenticated' && (user.customerId || user.email);
+  const savedCustomer = orderConfirmation.customer || {};
+  const resolvedCustomer = {
+    customerId: isLiveUserAuthenticated ? (user.customerId || '') : (savedCustomer.customerId || ''),
+    email: isLiveUserAuthenticated ? (user.email || '') : (savedCustomer.email || ''),
+    authenticated: isLiveUserAuthenticated ? (user.authenticated || 'unauthenticated') : (savedCustomer.authenticated || 'unauthenticated'),
+  };
+
+  const orderEventId = crypto.randomUUID();
   const eventPayload = {
     eventType: 'ORDER_CONFIRMATION',
     timestamp: new Date().toISOString(),
     _id: crypto.randomUUID(),
+    eventId: orderEventId,
     SOURCE: 'BETA_COMMERCE',
-    customer: {
-      customerId: user.customerId || '',
-      email: user.email || '',
-      authenticated: user.authenticated || 'unauthenticated',
-    },
+    customerId: resolvedCustomer.customerId || '',
+    email: resolvedCustomer.email || '',
+    customer: resolvedCustomer,
     order: {
       orderId: orderConfirmation.orderId || '',
       cartId: orderConfirmation.cartId || '',
@@ -208,9 +252,12 @@ async function publishOrderEventToKafka(orderConfirmation) {
   };
 
   console.group('[digitalData] 🚀 Publishing ORDER_CONFIRMATION event to Kafka');
-  console.log('Topic   :', KAFKA_ORDER_TOPIC);
-  console.log('Endpoint:', KAFKA_ORDER_REST_PROXY_URL);
-  console.log('Payload :', JSON.stringify(eventPayload, null, 2));
+  console.log('Topic      :', KAFKA_ORDER_TOPIC);
+  console.log('Endpoint   :', KAFKA_ORDER_REST_PROXY_URL);
+  console.log('eventId    :', orderEventId);
+  console.log('customerId :', resolvedCustomer.customerId || '(unauthenticated)');
+  console.log('email      :', resolvedCustomer.email || '(unauthenticated)');
+  console.log('Payload    :', JSON.stringify(eventPayload, null, 2));
   console.groupEnd();
 
   const kafkaEnvelope = {
@@ -488,6 +535,10 @@ function pushOrderConfirmation(orderData) {
       status: 'SUCCESS',
     },
     paymentStatus: 'SUCCESS',
+    // Carry forward the customer snapshot saved at checkout time so that
+    // publishOrderEventToKafka can use it if digitalData.user is still
+    // unauthenticated after the page navigation.
+    customer: orderData.customer || {},
   };
 
   // Populate the persistent orderConfirmation node on digitalData and sessionStorage
@@ -664,3 +715,8 @@ window.addEventListener('clearCart', () => {
 }());
 
 console.log('[digitalData] ✅ Datalayer initialised', window.digitalData);
+
+// Dispatch a ready event so blocks that run before this module finishes
+// loading can listen and publish their Kafka events after user data is
+// fully hydrated from cookie / sessionStorage.
+window.dispatchEvent(new CustomEvent('digitalDataReady', { detail: window.digitalData }));

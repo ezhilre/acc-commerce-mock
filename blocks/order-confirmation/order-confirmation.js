@@ -1,88 +1,25 @@
-import { KAFKA_REST_PROXY_BASE, KAFKA_ORDER_TOPIC } from '../../scripts/config.js';
-
 /**
- * Publish an ORDER_CONFIRMATION event directly to Kafka via the REST Proxy.
- * This is called directly from decorate() so it is not subject to the async
- * datalayer.js load timing — the block owns the publish call.
+ * Returns a Promise that resolves once window.digitalData is fully hydrated
+ * (cookie + sessionStorage). If datalayer.js has already dispatched the
+ * 'digitalDataReady' event we resolve immediately; otherwise we wait for it
+ * with a 3-second safety timeout so the page never hangs.
  */
-async function publishOrderEventToKafka(order) {
-  const user = (window.digitalData && window.digitalData.user) || {};
-  const resolvedCartId = order.cartId
-    || (window.digitalData && window.digitalData.cart && window.digitalData.cart.cartId)
-    || sessionStorage.getItem('digitalData_cartId')
-    || '';
-
-  const eventPayload = {
-    eventType: 'ORDER_CONFIRMATION',
-    timestamp: new Date().toISOString(),
-    _id: crypto.randomUUID(),
-    SOURCE: 'BETA_COMMERCE',
-    customer: {
-      customerId: user.customerId || '',
-      email: user.email || '',
-      authenticated: user.authenticated || 'unauthenticated',
-    },
-    order: {
-      orderId: order.orderId || '',
-      cartId: resolvedCartId,
-      date: order.date || new Date().toISOString(),
-      total: order.total || '0.00',
-      currency: order.currency || 'INR',
-      itemCount: (order.items || []).length,
-      totalQuantity: (order.items || []).reduce((sum, i) => sum + (i.quantity || 1), 0),
-      paymentStatus: 'SUCCESS',
-      payment: {
-        method: order.paymentData ? order.paymentData.method : 'credit-card',
-        last4: order.paymentData ? order.paymentData.last4 : '',
-        cardType: order.paymentData ? (order.paymentData.cardType || '') : '',
-        status: 'SUCCESS',
-      },
-      billingAddress: order.billingAddress || {},
-      shippingAddress: order.shippingAddress || {},
-      items: (order.items || []).map((i) => ({
-        sku: i.sku,
-        name: i.name,
-        price: i.price,
-        quantity: i.quantity,
-        category: i.category,
-        image: i.image,
-      })),
-    },
-  };
-
-  const kafkaEnvelope = { records: [{ value: eventPayload }] };
-  const url = `${KAFKA_REST_PROXY_BASE}/topics/${KAFKA_ORDER_TOPIC}`;
-
-  console.group('[order-confirmation] 🚀 Publishing ORDER_CONFIRMATION event to Kafka');
-  console.log('Topic   :', KAFKA_ORDER_TOPIC);
-  console.log('Endpoint:', url);
-  console.log('Payload :', JSON.stringify(eventPayload, null, 2));
-  console.groupEnd();
-
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/vnd.kafka.json.v2+json',
-        Accept: 'application/vnd.kafka.v2+json',
-      },
-      body: JSON.stringify(kafkaEnvelope),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error(`[order-confirmation] ❌ Kafka publish failed — HTTP ${response.status}:`, errText);
+function waitForDigitalData() {
+  return new Promise((resolve) => {
+    // Already ready (module loaded synchronously before us)
+    if (window.digitalData && window.digitalData.pushOrderConfirmation) {
+      resolve(window.digitalData);
       return;
     }
-
-    const result = await response.json().catch(() => ({}));
-    console.group('[order-confirmation] ✅ Kafka ORDER_CONFIRMATION published');
-    console.log('HTTP Status :', response.status);
-    console.log('Response    :', result);
-    console.groupEnd();
-  } catch (networkErr) {
-    console.error('[order-confirmation] ❌ Kafka publish – network error:', networkErr);
-  }
+    const timeout = setTimeout(() => {
+      console.warn('[order-confirmation] digitalDataReady timeout – proceeding with available data');
+      resolve(window.digitalData || {});
+    }, 3000);
+    window.addEventListener('digitalDataReady', (e) => {
+      clearTimeout(timeout);
+      resolve(e.detail || window.digitalData || {});
+    }, { once: true });
+  });
 }
 
 function formatDate(isoString) {
@@ -129,13 +66,17 @@ export default function decorate(block) {
     return;
   }
 
-  // ── Publish ORDER_CONFIRMATION event to Kafka (non-blocking) ─────────────
-  // Called directly here so it is not subject to the async datalayer.js
-  // load timing. Also delegate to datalayer if it is already ready.
-  publishOrderEventToKafka(order);
-  if (window.digitalData && window.digitalData.pushOrderConfirmation) {
-    window.digitalData.pushOrderConfirmation(order);
-  }
+  // ── Publish ORDER_CONFIRMATION event to Kafka via datalayer ──────────────
+  // Wait for datalayer.js to finish hydrating user data from cookie/session
+  // before calling pushOrderConfirmation so that customerId, email and
+  // eventId are never empty in the Kafka payload.
+  waitForDigitalData().then((dd) => {
+    if (dd && dd.pushOrderConfirmation) {
+      dd.pushOrderConfirmation(order);
+    } else {
+      console.warn('[order-confirmation] datalayer not available; ORDER_CONFIRMATION not pushed');
+    }
+  });
 
   // ── Clear cartId from sessionStorage — cart is now converted to order ─────
   sessionStorage.removeItem('digitalData_cartId');

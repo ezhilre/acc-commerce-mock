@@ -274,6 +274,11 @@ export default function decorate(block) {
       || sessionStorage.getItem('digitalData_cartId')
       || '';
 
+    // Capture current user state at checkout time so it survives the page
+    // navigation to order-confirmation (where digitalData.user may not yet
+    // be re-hydrated from Firebase when Kafka is published).
+    const currentUser = (window.digitalData && window.digitalData.user) ? window.digitalData.user : null;
+
     const orderData = {
       orderId: generateOrderId(),
       cartId,
@@ -284,6 +289,11 @@ export default function decorate(block) {
       items: cart,
       total: total.toFixed(2),
       currency: 'INR',
+      customer: {
+        customerId: currentUser ? (currentUser.customerId || '') : '',
+        email: currentUser ? (currentUser.email || '') : '',
+        authenticated: currentUser ? (currentUser.authenticated || 'unauthenticated') : 'unauthenticated',
+      },
     };
 
     try {
