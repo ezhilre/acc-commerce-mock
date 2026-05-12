@@ -31,7 +31,7 @@ export default function decorate(block) {
     });
   });
 
-  // Hide the block's section — it should never render visible content on the page
+  // Remove the block's section from the DOM entirely — it should never render on the page
   const section = block.closest('.section');
-  if (section) section.style.display = 'none';
+  if (section) section.remove();
 }
