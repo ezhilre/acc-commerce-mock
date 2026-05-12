@@ -391,6 +391,75 @@ function clearStatus(container) {
   if (statusEl) statusEl.remove();
 }
 
+/**
+ * Show a modern floating toast notification.
+ * @param {string} message  - text to display
+ * @param {'success'|'error'|'info'} type - styling variant
+ * @param {number} duration - auto-dismiss after ms (default 5000)
+ */
+function showToast(message, type = 'success', duration = 5000) {
+  // Remove any existing toast
+  const existing = document.getElementById('auth-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'auth-toast';
+  toast.classList.add('auth-toast', `auth-toast--${type}`);
+  toast.setAttribute('role', 'alert');
+  toast.setAttribute('aria-live', 'polite');
+
+  // Icon
+  const icon = document.createElement('span');
+  icon.classList.add('auth-toast-icon');
+  icon.setAttribute('aria-hidden', 'true');
+  if (type === 'success') {
+    icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>`;
+  } else if (type === 'error') {
+    icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+  } else {
+    icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+  }
+
+  // Message
+  const text = document.createElement('span');
+  text.classList.add('auth-toast-message');
+  text.textContent = message;
+
+  // Close button
+  const closeBtn = document.createElement('button');
+  closeBtn.classList.add('auth-toast-close');
+  closeBtn.setAttribute('aria-label', 'Dismiss notification');
+  closeBtn.innerHTML = '&times;';
+  closeBtn.addEventListener('click', () => dismissToast(toast));
+
+  // Progress bar
+  const progress = document.createElement('div');
+  progress.classList.add('auth-toast-progress');
+  progress.style.animationDuration = `${duration}ms`;
+
+  toast.append(icon, text, closeBtn, progress);
+  document.body.appendChild(toast);
+
+  // Trigger enter animation on next frame
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+  });
+
+  // Auto-dismiss
+  const timer = setTimeout(() => dismissToast(toast), duration);
+  toast._dismissTimer = timer;
+}
+
+function dismissToast(toast) {
+  if (!toast || !toast.parentNode) return;
+  clearTimeout(toast._dismissTimer);
+  toast.classList.remove('is-visible');
+  toast.classList.add('is-hiding');
+  toast.addEventListener('animationend', () => toast.remove(), { once: true });
+  // Fallback removal
+  setTimeout(() => toast.remove(), 500);
+}
+
 // ── Sign-In panel ────────────────────────────────────────────────────────────
 
 function buildSignInPanel() {
@@ -555,15 +624,15 @@ function buildCreateAccountPanel() {
       console.log('Firebase User  :', user);
       console.groupEnd();
 
-      // ✅ Auth succeeded — show success immediately, restore button, reset form
+      // ✅ Auth succeeded — set cookie, close modal, reset form, show toast
+      setAuthCookie(user);
+      form.reset();
       submit.disabled = false;
       submit.textContent = 'Create Account';
-      showStatus(
-        form,
-        `${firstName} ${lastName}, your account is created and you may log in now.`,
-        'success',
-      );
-      form.reset();
+      closeModal();
+      showToast('Your account is created and you are logged in now.', 'success', 6000);
+
+      window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user } }));
 
       // ── Push signup event to digitalData datalayer (non-blocking) ────────
       const numericCustomerId = generateNumericCustomerId();

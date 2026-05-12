@@ -402,6 +402,125 @@
   transform: none;
 }
 
+/* ── Toast Notification ──────────────────────────────── */
+.auth-toast {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  max-width: 440px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #fff;
+  overflow: hidden;
+  /* Start hidden – slide up on entry */
+  opacity: 0;
+  transform: translateY(20px) scale(0.97);
+  transition: none;
+  pointer-events: none;
+}
+
+.auth-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: auto;
+}
+
+.auth-toast.is-hiding {
+  animation: auth-toast-out 0.3s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes auth-toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+}
+
+/* Variants */
+.auth-toast--success {
+  background: linear-gradient(135deg, #1b873b 0%, #22a84a 100%);
+}
+
+.auth-toast--error {
+  background: linear-gradient(135deg, #c62828 0%, #e53935 100%);
+}
+
+.auth-toast--info {
+  background: linear-gradient(135deg, #0d6efd 0%, #3d8ef8 100%);
+}
+
+/* Icon */
+.auth-toast-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0.95;
+}
+
+/* Message */
+.auth-toast-message {
+  flex: 1;
+}
+
+/* Close button */
+.auth-toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  margin-left: 4px;
+}
+
+.auth-toast-close:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Progress bar – shrinks from 100 → 0 over the duration */
+.auth-toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.4);
+  transform-origin: left center;
+  animation: auth-toast-progress linear forwards;
+}
+
+@keyframes auth-toast-progress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* Mobile: full-width, bottom-centred */
+@media (max-width: 600px) {
+  .auth-toast {
+    bottom: 20px;
+    right: 16px;
+    left: 16px;
+    max-width: none;
+    min-width: 0;
+  }
+}
+
 /* ── Responsive ──────────────────────────────────────── */
 @media (max-width: 600px) {
   .auth-modal {
