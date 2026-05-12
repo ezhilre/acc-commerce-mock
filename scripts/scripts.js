@@ -130,50 +130,10 @@ export function decorateMain(main) {
 }
 
 /**
- * Reads script tags from the top-library-header block (authored in EDS)
- * and injects them into <head>. This allows authors to manage <head> scripts
- * via the EDS document without hardcoding them.
- * @param {Element} doc The document element
- */
-function injectHeadScriptsFromLibraryHeader(doc) {
-  const block = doc.querySelector('.top-library-header');
-  if (!block) return;
-
-  // EDS stores script tags as HTML-encoded text (e.g. &#x3C;script ...&#x3E;)
-  // so we read textContent (which gives the decoded string) and parse it as HTML
-  block.querySelectorAll(':scope > div > div').forEach((cell) => {
-    const text = cell.textContent.trim();
-    if (!text) return;
-
-    // Set the decoded text as innerHTML of a temp container to parse it as DOM
-    const temp = document.createElement('div');
-    temp.innerHTML = text;
-    temp.querySelectorAll('script').forEach((script) => {
-      const newScript = document.createElement('script');
-      // Copy all attributes (src, async, defer, type, etc.)
-      [...script.attributes].forEach(({ name, value }) => newScript.setAttribute(name, value));
-      if (script.textContent) newScript.textContent = script.textContent;
-      document.head.appendChild(newScript);
-    });
-  });
-
-  // Remove the block's containing section from the DOM.
-  // Note: .section class is not yet applied when this runs (before decorateSections),
-  // so we walk up to the direct child of <main> to remove the whole section.
-  const main = doc.querySelector('main');
-  let sectionEl = block.parentElement;
-  while (sectionEl && sectionEl.parentElement !== main) {
-    sectionEl = sectionEl.parentElement;
-  }
-  if (sectionEl) sectionEl.remove();
-}
-
-/**
  * Loads everything needed to get to LCP.
  * @param {Element} doc The container element
  */
 async function loadEager(doc) {
-  injectHeadScriptsFromLibraryHeader(doc);
   document.documentElement.lang = 'en';
   decorateTemplateAndTheme();
   const main = doc.querySelector('main');
