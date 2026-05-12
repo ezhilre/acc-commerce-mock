@@ -130,6 +130,35 @@ export function decorateMain(main) {
 }
 
 /**
+ * Reads script tags authored in the top-library-header block (HTML-encoded text)
+ * and injects them into <head> as early as possible — before block decoration.
+ * The block's section is hidden so it never renders visible content.
+ * @param {Element} main The main element
+ */
+function injectTopLibraryHeaderScripts(main) {
+  main.querySelectorAll('.top-library-header > div > div').forEach((cell) => {
+    const text = cell.textContent.trim();
+    if (!text) return;
+
+    const temp = document.createElement('div');
+    temp.innerHTML = text;
+
+    temp.querySelectorAll('script').forEach((script) => {
+      const newScript = document.createElement('script');
+      [...script.attributes].forEach(({ name, value }) => newScript.setAttribute(name, value));
+      if (script.textContent.trim()) newScript.textContent = script.textContent;
+      document.head.appendChild(newScript);
+    });
+  });
+
+  // Hide the block's section — it should never render visible content on the page
+  main.querySelectorAll('.top-library-header').forEach((block) => {
+    const section = block.closest('.section');
+    if (section) section.style.display = 'none';
+  });
+}
+
+/**
  * Loads everything needed to get to LCP.
  * @param {Element} doc The container element
  */
@@ -138,6 +167,7 @@ async function loadEager(doc) {
   decorateTemplateAndTheme();
   const main = doc.querySelector('main');
   if (main) {
+    injectTopLibraryHeaderScripts(main);
     decorateMain(main);
     document.body.classList.add('appear');
     await loadSection(main.querySelector('.section'), waitForFirstImage);
