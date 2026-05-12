@@ -818,4 +818,12 @@ function pushPageView() {
 
 // Fire pageView after the page is fully loaded so the document title and
 // any deferred user-hydration (cookie / authStateChanged) have completed.
-window.addEventListener('load', pushPageView);
+// Because datalayer.js is loaded via a dynamic import(), the window 'load'
+// event may have already fired by the time this code runs. Guard against
+// that by checking document.readyState and calling pushPageView immediately
+// when the page is already fully loaded.
+if (document.readyState === 'complete') {
+  pushPageView();
+} else {
+  window.addEventListener('load', pushPageView, { once: true });
+}
