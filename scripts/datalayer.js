@@ -7,7 +7,7 @@
  * Structure:
  *  window.digitalData = {
  *    user:  { authenticated, customerId, email, firstName, lastName,
- *             phone, country, isEmailVerified, source },
+ *             phone, gender, interests, dob, country, isEmailVerified, source },
  *    cart:  { cartId: '', items: [] },
  *    orderConfirmation: {},                        // populated on order-confirmation page
  *    events: []          // append-only event log
@@ -34,6 +34,9 @@ window.digitalData = window.digitalData || {
     firstName: '',
     lastName: '',
     phone: '',
+    gender: '',
+    interests: [],
+    dob: '',
     country: '',
     isEmailVerified: false,
     source: '',
@@ -348,6 +351,9 @@ function pushEvent(eventObj) {
  * @param {string}  userData.firstName
  * @param {string}  userData.lastName
  * @param {string}  [userData.phone]
+ * @param {string}  [userData.gender]       – e.g. 'male' | 'female' | 'non-binary' | 'prefer-not-to-say'
+ * @param {Array}   [userData.interests]    – e.g. ['sports', 'yoga', 'travel']
+ * @param {string}  [userData.dob]          – ISO date string 'YYYY-MM-DD'
  * @param {string}  [userData.country]
  * @param {boolean} [userData.isEmailVerified]
  * @param {string}  [userData.source]          – e.g. 'BETA_COMMERCE'
@@ -362,6 +368,9 @@ function setUser(userData) {
     firstName: userData.firstName || '',
     lastName: userData.lastName || '',
     phone: userData.phone || '',
+    gender: userData.gender || '',
+    interests: Array.isArray(userData.interests) ? userData.interests : [],
+    dob: userData.dob || '',
     country: userData.country || '',
     isEmailVerified: userData.isEmailVerified !== undefined ? userData.isEmailVerified : false,
     source: userData.source || 'BETA_COMMERCE',
@@ -393,6 +402,9 @@ function clearUser() {
     firstName: '',
     lastName: '',
     phone: '',
+    gender: '',
+    interests: [],
+    dob: '',
     country: '',
     isEmailVerified: false,
     source: '',
@@ -729,6 +741,9 @@ window.addEventListener('clearCart', () => {
       firstName: '',   // not stored in cookie; will be enriched by authStateChanged
       lastName: '',
       phone: '',
+      gender: '',
+      interests: [],
+      dob: '',
       country: '',
       isEmailVerified: cookieData.emailVerified || false,
       source: 'BETA_COMMERCE',

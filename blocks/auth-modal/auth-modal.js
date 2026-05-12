@@ -60,6 +60,9 @@ async function publishSignupEventToKafka(userData) {
       phone: userData.phone || '',
       firstName: userData.firstName,
       lastName: userData.lastName,
+      gender: userData.gender || '',
+      interests: userData.interests || [],
+      dob: userData.dob || '',
       isEmailVerified: true,
     },
   };
@@ -227,6 +230,146 @@ function makeField(id, labelText, type = 'text') {
 }
 
 /**
+ * Build a mobile number field with country-code prefix.
+ */
+function makeMobileField(id, labelText) {
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('auth-modal-field');
+
+  const label = document.createElement('label');
+  label.setAttribute('for', id);
+  label.textContent = labelText;
+
+  const inputWrapper = document.createElement('div');
+  inputWrapper.classList.add('auth-modal-phone-wrapper');
+
+  const prefix = document.createElement('span');
+  prefix.classList.add('auth-modal-phone-prefix');
+  prefix.textContent = '+91';
+
+  const input = document.createElement('input');
+  input.type = 'tel';
+  input.id = id;
+  input.name = id;
+  input.placeholder = '10-digit mobile number';
+  input.maxLength = 10;
+  input.pattern = '[0-9]{10}';
+  input.autocomplete = 'tel';
+
+  inputWrapper.append(prefix, input);
+  wrapper.append(label, inputWrapper);
+  return wrapper;
+}
+
+/**
+ * Build a gender select field.
+ */
+function makeGenderField(id, labelText) {
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('auth-modal-field');
+
+  const label = document.createElement('label');
+  label.setAttribute('for', id);
+  label.textContent = labelText;
+
+  const select = document.createElement('select');
+  select.id = id;
+  select.name = id;
+  select.classList.add('auth-modal-select');
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Select gender';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+
+  ['Male', 'Female', 'Non-binary', 'Prefer not to say'].forEach((g) => {
+    const opt = document.createElement('option');
+    opt.value = g.toLowerCase().replace(/\s+/g, '-');
+    opt.textContent = g;
+    select.appendChild(opt);
+  });
+
+  select.prepend(placeholder);
+  wrapper.append(label, select);
+  return wrapper;
+}
+
+/**
+ * Build a multi-select interests field (checkboxes).
+ */
+function makeInterestsField(legendText, interests) {
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('auth-modal-field', 'auth-modal-field--interests');
+
+  const legend = document.createElement('span');
+  legend.classList.add('auth-modal-field-legend');
+  legend.textContent = legendText;
+
+  const optionsWrapper = document.createElement('div');
+  optionsWrapper.classList.add('auth-modal-interests');
+
+  interests.forEach((interest) => {
+    const item = document.createElement('label');
+    item.classList.add('auth-modal-interest-item');
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.name = 'interests';
+    cb.value = interest.toLowerCase();
+    cb.classList.add('auth-modal-interest-cb');
+
+    const span = document.createElement('span');
+    span.textContent = interest;
+
+    item.append(cb, span);
+    optionsWrapper.appendChild(item);
+  });
+
+  wrapper.append(legend, optionsWrapper);
+  return wrapper;
+}
+
+/**
+ * Build a modern date-of-birth picker.
+ */
+function makeDOBField(id, labelText) {
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('auth-modal-field');
+
+  const label = document.createElement('label');
+  label.setAttribute('for', id);
+  label.textContent = labelText;
+
+  const inputWrapper = document.createElement('div');
+  inputWrapper.classList.add('auth-modal-dob-wrapper');
+
+  const input = document.createElement('input');
+  input.type = 'date';
+  input.id = id;
+  input.name = id;
+  input.classList.add('auth-modal-dob');
+  input.autocomplete = 'bday';
+
+  // Restrict to reasonable range: 100 years ago → 13 years ago (minimum age)
+  const today = new Date();
+  const minAge = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
+  const maxAge = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
+  input.min = minAge.toISOString().split('T')[0];
+  input.max = maxAge.toISOString().split('T')[0];
+
+  const calIcon = document.createElement('span');
+  calIcon.classList.add('auth-modal-dob-icon');
+  calIcon.setAttribute('aria-hidden', 'true');
+  calIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+  calIcon.addEventListener('click', () => input.showPicker && input.showPicker());
+
+  inputWrapper.append(input, calIcon);
+  wrapper.append(label, inputWrapper);
+  return wrapper;
+}
+
+/**
  * Show a status message inside a panel.
  * @param {HTMLElement} container  - element that holds the message div
  * @param {string}      message    - text to display
@@ -350,6 +493,10 @@ function buildCreateAccountPanel() {
     makeField('create-lastname', 'Last Name', 'text'),
     makeField('create-email', 'Email', 'email'),
     makeField('create-password', 'Password', 'password'),
+    makeMobileField('create-mobile', 'Mobile Number'),
+    makeGenderField('create-gender', 'Gender'),
+    makeInterestsField('Your Interests', ['Sports', 'Yoga', 'Travel']),
+    makeDOBField('create-dob', 'Date of Birth'),
   );
 
   const submit = document.createElement('button');
@@ -366,14 +513,22 @@ function buildCreateAccountPanel() {
     const lastName = form.querySelector('#create-lastname').value.trim();
     const email = form.querySelector('#create-email').value.trim();
     const password = form.querySelector('#create-password').value;
+    const mobile = form.querySelector('#create-mobile').value.trim();
+    const gender = form.querySelector('#create-gender').value;
+    const dob = form.querySelector('#create-dob').value;
+    const interests = [...form.querySelectorAll('input[name="interests"]:checked')].map((cb) => cb.value);
 
     // Basic validation
     if (!firstName || !lastName || !email || !password) {
-      showStatus(form, 'Please fill in all fields.', 'error');
+      showStatus(form, 'Please fill in all required fields.', 'error');
       return;
     }
     if (password.length < 6) {
       showStatus(form, 'Password must be at least 6 characters.', 'error');
+      return;
+    }
+    if (mobile && !/^\d{10}$/.test(mobile)) {
+      showStatus(form, 'Please enter a valid 10-digit mobile number.', 'error');
       return;
     }
 
@@ -393,6 +548,10 @@ function buildCreateAccountPanel() {
       console.log('Email Verified :', user.emailVerified);
       console.log('Display Name   :', user.displayName);
       console.log('Created At     :', user.metadata?.creationTime);
+      console.log('Mobile         :', mobile);
+      console.log('Gender         :', gender);
+      console.log('Interests      :', interests);
+      console.log('DOB            :', dob);
       console.log('Firebase User  :', user);
       console.groupEnd();
 
@@ -414,7 +573,10 @@ function buildCreateAccountPanel() {
           email,
           firstName,
           lastName,
-          phone: '',
+          phone: mobile ? `+91${mobile}` : '',
+          gender: gender || '',
+          interests,
+          dob: dob || '',
           country: '',
           isEmailVerified: false,
           source: 'BETA_COMMERCE',
@@ -431,6 +593,10 @@ function buildCreateAccountPanel() {
         firstName,
         lastName,
         email,
+        phone: mobile ? `+91${mobile}` : '',
+        gender: gender || '',
+        interests,
+        dob: dob || '',
         createdAt: new Date(),
       }).catch((firestoreErr) => {
         console.error('[AuthModal] Firestore write error:', firestoreErr);
@@ -442,7 +608,10 @@ function buildCreateAccountPanel() {
         email,
         firstName,
         lastName,
-        phone: '', // phone field not collected in this form; extend makeField if needed
+        phone: mobile ? `+91${mobile}` : '',
+        gender: gender || '',
+        interests,
+        dob: dob || '',
       });
     } catch (err) {
       console.error('[AuthModal] Create account error:', err);

@@ -217,6 +217,184 @@
   border: 1px solid #ef9a9a;
 }
 
+/* ── Phone field with prefix ─────────────────────────── */
+.auth-modal-phone-wrapper {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #c2c2c2;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-modal-phone-wrapper:focus-within {
+  border-color: #e07b39;
+  box-shadow: 0 0 0 2px rgba(224, 123, 57, 0.15);
+}
+
+.auth-modal-phone-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background-color: #f5f5f5;
+  border-right: 1px solid #c2c2c2;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #555;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.auth-modal-phone-wrapper input {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  flex: 1;
+}
+
+.auth-modal-phone-wrapper input:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* ── Gender / Select field ───────────────────────────── */
+.auth-modal-select {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 36px 12px 14px;
+  border: 1px solid #c2c2c2;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  color: #333;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23757575' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.auth-modal-select:focus {
+  border-color: #e07b39;
+  box-shadow: 0 0 0 2px rgba(224, 123, 57, 0.15);
+}
+
+/* ── Interests (multi-checkbox) ──────────────────────── */
+.auth-modal-field--interests {
+  margin-bottom: 20px;
+}
+
+.auth-modal-field-legend {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.auth-modal-interests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.auth-modal-interest-item {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-modal-interest-item span {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border: 1.5px solid #c2c2c2;
+  border-radius: 20px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #555;
+  background-color: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.auth-modal-interest-item:hover span {
+  border-color: #e07b39;
+  color: #e07b39;
+}
+
+.auth-modal-interest-cb {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.auth-modal-interest-cb:checked + span {
+  border-color: #e07b39;
+  background-color: #e07b39;
+  color: #fff;
+}
+
+/* ── DOB picker ──────────────────────────────────────── */
+.auth-modal-dob-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-modal-dob {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 44px 12px 14px;
+  border: 1px solid #c2c2c2;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  color: #333;
+  background-color: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+  cursor: pointer;
+}
+
+.auth-modal-dob:focus {
+  border-color: #e07b39;
+  box-shadow: 0 0 0 2px rgba(224, 123, 57, 0.15);
+}
+
+/* Hide the native calendar icon on Chrome/Edge so ours shows instead */
+.auth-modal-dob::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 44px;
+  height: 100%;
+  cursor: pointer;
+}
+
+.auth-modal-dob-icon {
+  position: absolute;
+  right: 13px;
+  display: flex;
+  align-items: center;
+  color: #757575;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.auth-modal-dob-wrapper:focus-within .auth-modal-dob-icon {
+  color: #e07b39;
+}
+
 /* ── Submit button – loading / disabled state ────────── */
 .auth-modal-submit:disabled {
   background-color: #c9a08a;
