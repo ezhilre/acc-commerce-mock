@@ -747,3 +747,75 @@ console.log('[digitalData] ✅ Datalayer initialised', window.digitalData);
 // loading can listen and publish their Kafka events after user data is
 // fully hydrated from cookie / sessionStorage.
 window.dispatchEvent(new CustomEvent('digitalDataReady', { detail: window.digitalData }));
+
+// ── Page View ─────────────────────────────────────────────────────────────────
+
+/**
+ * Build the page context object from the current location and document.
+ *
+ * @returns {object}
+ */
+function buildPageContext() {
+  const { pathname, href, search, hash } = window.location;
+
+  // Derive a human-readable page name from the last path segment,
+  // falling back to the document title, then the pathname itself.
+  const segments = pathname.replace(/\/$/, '').split('/').filter(Boolean);
+  const pageName = segments.length > 0
+    ? segments[segments.length - 1].replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    : document.title || pathname;
+
+  return {
+    path: pathname,
+    url: href,
+    title: document.title || '',
+    name: pageName,
+    queryString: search || '',
+    hash: hash || '',
+    referrer: document.referrer || '',
+    language: document.documentElement.lang || navigator.language || '',
+    hostname: window.location.hostname,
+  };
+}
+
+/**
+ * Push a PAGE_VIEW event to both digitalData.events and window.adobeDataLayer.
+ * Fired once on the window 'load' event so the full page (including
+ * any dynamically-set <title>) is available.
+ *
+ * Shape pushed to adobeDataLayer:
+ * {
+ *   event: 'PAGE_VIEW',
+ *   eventInfo: {
+ *     eventId, eventType, source, timestamp,
+ *     page: { path, url, title, name, queryString, hash, referrer, language, hostname },
+ *     user: { authenticated, customerId, email, firstName, lastName, … }
+ *   }
+ * }
+ */
+function pushPageView() {
+  const page = buildPageContext();
+  const user = { ...window.digitalData.user };
+
+  const eventObj = {
+    eventId: crypto.randomUUID(),
+    eventType: 'PAGE_VIEW',
+    source: 'BETA_COMMERCE',
+    page,
+    user,
+  };
+
+  pushEvent(eventObj);
+  pushToAdobeDataLayer(eventObj);
+
+  console.group('[digitalData] 📄 Page View');
+  console.log('Path      :', page.path);
+  console.log('Title     :', page.title);
+  console.log('Referrer  :', page.referrer || '(none)');
+  console.log('User      :', user.authenticated === 'authenticated' ? `${user.email} (${user.customerId})` : 'unauthenticated');
+  console.groupEnd();
+}
+
+// Fire pageView after the page is fully loaded so the document title and
+// any deferred user-hydration (cookie / authStateChanged) have completed.
+window.addEventListener('load', pushPageView);
