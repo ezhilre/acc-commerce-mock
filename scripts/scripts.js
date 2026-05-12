@@ -139,14 +139,15 @@ function injectHeadScriptsFromLibraryHeader(doc) {
   const block = doc.querySelector('.top-library-header');
   if (!block) return;
 
-  // Each row's first cell contains the raw HTML with the script tag
+  // EDS stores script tags as HTML-encoded text (e.g. &#x3C;script ...&#x3E;)
+  // so we read textContent (which gives the decoded string) and parse it as HTML
   block.querySelectorAll(':scope > div > div').forEach((cell) => {
-    const html = cell.innerHTML.trim();
-    if (!html) return;
+    const text = cell.textContent.trim();
+    if (!text) return;
 
-    // Parse the cell content as HTML to extract script elements
+    // Set the decoded text as innerHTML of a temp container to parse it as DOM
     const temp = document.createElement('div');
-    temp.innerHTML = html;
+    temp.innerHTML = text;
     temp.querySelectorAll('script').forEach((script) => {
       const newScript = document.createElement('script');
       // Copy all attributes (src, async, defer, type, etc.)
@@ -156,8 +157,15 @@ function injectHeadScriptsFromLibraryHeader(doc) {
     });
   });
 
-  // Remove the block from the DOM so it doesn't render on the page
-  block.closest('.section')?.remove();
+  // Remove the block's containing section from the DOM.
+  // Note: .section class is not yet applied when this runs (before decorateSections),
+  // so we walk up to the direct child of <main> to remove the whole section.
+  const main = doc.querySelector('main');
+  let sectionEl = block.parentElement;
+  while (sectionEl && sectionEl.parentElement !== main) {
+    sectionEl = sectionEl.parentElement;
+  }
+  if (sectionEl) sectionEl.remove();
 }
 
 /**
