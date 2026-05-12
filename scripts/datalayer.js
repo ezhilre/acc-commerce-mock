@@ -294,6 +294,28 @@ async function publishOrderEventToKafka(orderConfirmation) {
   }
 }
 
+// ── Adobe Data Layer helper ───────────────────────────────────────────────────
+
+/**
+ * Initialise window.adobeDataLayer (if not already present by ACDL script)
+ * and push an event object into it.
+ *
+ * Adobe Client Data Layer expects objects with an `event` string property.
+ * We map our internal eventType to the `event` key and carry the full
+ * payload in `eventInfo` so Launch / Tags rules can inspect it.
+ *
+ * @param {object} eventObj  – the same enriched event object we push to digitalData
+ */
+function pushToAdobeDataLayer(eventObj) {
+  window.adobeDataLayer = window.adobeDataLayer || [];
+  const adobeEvent = {
+    event: eventObj.eventType,
+    eventInfo: { ...eventObj },
+  };
+  window.adobeDataLayer.push(adobeEvent);
+  console.log('[adobeDataLayer] event pushed:', JSON.stringify(adobeEvent, null, 2));
+}
+
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 /**
@@ -344,12 +366,15 @@ function setUser(userData) {
     source: userData.source || 'BETA_COMMERCE',
   };
 
-  pushEvent({
+  const authEvent = {
     eventId: userData.eventId || crypto.randomUUID(),
     eventType: userData.eventType || 'BETA_COMMERCE_USER_LOGIN',
     source: userData.source || 'BETA_COMMERCE',
     user: { ...window.digitalData.user },
-  });
+  };
+
+  pushEvent(authEvent);
+  pushToAdobeDataLayer(authEvent);
 
   console.group('[digitalData] 👤 User authenticated');
   console.table(window.digitalData.user);
@@ -451,6 +476,7 @@ function pushAddToCart(item) {
   };
 
   pushEvent(eventObj);
+  pushToAdobeDataLayer(eventObj);
 
   // Publish to Kafka (non-blocking)
   publishCartEventToKafka(cartItem, _cartId, [...window.digitalData.cart.items]);
@@ -554,6 +580,7 @@ function pushOrderConfirmation(orderData) {
   };
 
   pushEvent(eventObj);
+  pushToAdobeDataLayer(eventObj);
 
   // Publish to Kafka (non-blocking)
   publishOrderEventToKafka(orderConfirmation);
