@@ -151,10 +151,11 @@ function injectTopLibraryHeaderScripts(main) {
     });
   });
 
-  // Hide the block's section — it should never render visible content on the page
+  // Remove the block's section from the DOM — scripts are now in <head>
   main.querySelectorAll('.top-library-header').forEach((block) => {
     const section = block.closest('.section');
-    if (section) section.style.display = 'none';
+    if (section) section.remove();
+    else block.remove();
   });
 }
 
