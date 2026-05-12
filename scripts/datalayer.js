@@ -70,6 +70,34 @@ function saveOrderConfirmationToSession(data) {
   } catch (e) { /* quota exceeded – silently ignore */ }
 }
 
+function saveUserProfileToSession(user) {
+  try {
+    sessionStorage.setItem('digitalData_userProfile', JSON.stringify({
+      phone: user.phone || '',
+      gender: user.gender || '',
+      interests: Array.isArray(user.interests) ? user.interests : [],
+      dob: user.dob || '',
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      country: user.country || '',
+    }));
+  } catch (e) { /* quota exceeded – silently ignore */ }
+}
+
+function getUserProfileFromSession() {
+  try {
+    const raw = sessionStorage.getItem('digitalData_userProfile');
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* ignore */ }
+  return null;
+}
+
+function clearUserProfileFromSession() {
+  try {
+    sessionStorage.removeItem('digitalData_userProfile');
+  } catch (e) { /* ignore */ }
+}
+
 // ── Kafka helpers ─────────────────────────────────────────────────────────────
 
 /** Full REST Proxy endpoint for cart events */
@@ -361,20 +389,31 @@ function pushEvent(eventObj) {
  * @param {string}  [userData.eventType]       – e.g. 'BETA_COMMERCE_USER_SIGNUP' | 'BETA_COMMERCE_USER_LOGIN'
  */
 function setUser(userData) {
+  // Merge with any extended profile saved in sessionStorage so that fields
+  // not available on the Firebase user object (gender, interests, dob, phone)
+  // are preserved when authStateChanged re-fires after a page load.
+  const sessionProfile = getUserProfileFromSession() || {};
+
   window.digitalData.user = {
     authenticated: 'authenticated',
     customerId: userData.customerId || '',
     email: userData.email || '',
-    firstName: userData.firstName || '',
-    lastName: userData.lastName || '',
-    phone: userData.phone || '',
-    gender: userData.gender || '',
-    interests: Array.isArray(userData.interests) ? userData.interests : [],
-    dob: userData.dob || '',
-    country: userData.country || '',
+    firstName: userData.firstName || sessionProfile.firstName || '',
+    lastName: userData.lastName || sessionProfile.lastName || '',
+    phone: userData.phone || sessionProfile.phone || '',
+    gender: userData.gender || sessionProfile.gender || '',
+    interests: Array.isArray(userData.interests) && userData.interests.length > 0
+      ? userData.interests
+      : (Array.isArray(sessionProfile.interests) ? sessionProfile.interests : []),
+    dob: userData.dob || sessionProfile.dob || '',
+    country: userData.country || sessionProfile.country || '',
     isEmailVerified: userData.isEmailVerified !== undefined ? userData.isEmailVerified : false,
     source: userData.source || 'BETA_COMMERCE',
   };
+
+  // Persist the extended profile fields so they survive page navigation
+  // and Firebase re-auth (which only carries uid/email/displayName).
+  saveUserProfileToSession(window.digitalData.user);
 
   const authEvent = {
     eventId: userData.eventId || crypto.randomUUID(),
@@ -409,6 +448,9 @@ function clearUser() {
     isEmailVerified: false,
     source: '',
   };
+
+  // Clear the extended profile from sessionStorage on sign-out
+  clearUserProfileFromSession();
 
   pushEvent({
     eventId: crypto.randomUUID(),
@@ -629,7 +671,9 @@ window.digitalData.push = pushEvent;
 window.addEventListener('authStateChanged', (e) => {
   const { user } = e.detail || {};
   if (user) {
-    // Firebase user object – enrich with Firestore profile if available later
+    // Firebase user object only carries uid/email/displayName/phoneNumber.
+    // setUser() will merge the extended profile (gender, interests, dob, phone)
+    // from sessionStorage automatically, so nothing is lost after page navigation.
     setUser({
       customerId: user.uid || '',
       email: user.email || '',
@@ -732,24 +776,26 @@ window.addEventListener('clearCart', () => {
 
     if (!cookieData || !cookieData.uid) return;
 
-    // Populate user node from cookie (uid is used as customerId until
-    // a full profile is available from Firestore / an authStateChanged event)
+    // Merge cookie identity with extended profile saved in sessionStorage
+    // (gender, interests, dob, phone captured at signup time).
+    const sessionProfile = getUserProfileFromSession() || {};
+
     window.digitalData.user = {
       authenticated: 'authenticated',
       customerId: cookieData.uid || '',
       email: cookieData.email || '',
-      firstName: '',   // not stored in cookie; will be enriched by authStateChanged
-      lastName: '',
-      phone: '',
-      gender: '',
-      interests: [],
-      dob: '',
-      country: '',
+      firstName: sessionProfile.firstName || '',
+      lastName: sessionProfile.lastName || '',
+      phone: sessionProfile.phone || '',
+      gender: sessionProfile.gender || '',
+      interests: Array.isArray(sessionProfile.interests) ? sessionProfile.interests : [],
+      dob: sessionProfile.dob || '',
+      country: sessionProfile.country || '',
       isEmailVerified: cookieData.emailVerified || false,
       source: 'BETA_COMMERCE',
     };
 
-    console.group('[digitalData] 🍪 User hydrated from auth cookie');
+    console.group('[digitalData] 🍪 User hydrated from auth cookie + session profile');
     console.table(window.digitalData.user);
     console.groupEnd();
   } catch (err) {
