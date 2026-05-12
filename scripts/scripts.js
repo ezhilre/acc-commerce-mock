@@ -130,10 +130,42 @@ export function decorateMain(main) {
 }
 
 /**
+ * Reads script tags from the top-library-header block (authored in EDS)
+ * and injects them into <head>. This allows authors to manage <head> scripts
+ * via the EDS document without hardcoding them.
+ * @param {Element} doc The document element
+ */
+function injectHeadScriptsFromLibraryHeader(doc) {
+  const block = doc.querySelector('.top-library-header');
+  if (!block) return;
+
+  // Each row's first cell contains the raw HTML with the script tag
+  block.querySelectorAll(':scope > div > div').forEach((cell) => {
+    const html = cell.innerHTML.trim();
+    if (!html) return;
+
+    // Parse the cell content as HTML to extract script elements
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    temp.querySelectorAll('script').forEach((script) => {
+      const newScript = document.createElement('script');
+      // Copy all attributes (src, async, defer, type, etc.)
+      [...script.attributes].forEach(({ name, value }) => newScript.setAttribute(name, value));
+      if (script.textContent) newScript.textContent = script.textContent;
+      document.head.appendChild(newScript);
+    });
+  });
+
+  // Remove the block from the DOM so it doesn't render on the page
+  block.closest('.section')?.remove();
+}
+
+/**
  * Loads everything needed to get to LCP.
  * @param {Element} doc The container element
  */
 async function loadEager(doc) {
+  injectHeadScriptsFromLibraryHeader(doc);
   document.documentElement.lang = 'en';
   decorateTemplateAndTheme();
   const main = doc.querySelector('main');
