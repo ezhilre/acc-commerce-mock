@@ -301,8 +301,9 @@ async function publishOrderEventToKafka(orderConfirmation) {
  * and push an event object into it.
  *
  * Adobe Client Data Layer expects objects with an `event` string property.
- * We map our internal eventType to the `event` key and carry the full
- * payload in `eventInfo` so Launch / Tags rules can inspect it.
+ * We map our internal eventType to the `event` key and spread the full
+ * payload directly onto the object so Launch / Tags rules can access all
+ * properties at the top level without drilling into an `eventInfo` wrapper.
  *
  * @param {object} eventObj  – the same enriched event object we push to digitalData
  */
@@ -310,7 +311,7 @@ function pushToAdobeDataLayer(eventObj) {
   window.adobeDataLayer = window.adobeDataLayer || [];
   const adobeEvent = {
     event: eventObj.eventType,
-    eventInfo: { ...eventObj },
+    ...eventObj,
   };
   window.adobeDataLayer.push(adobeEvent);
   console.log('[adobeDataLayer] event pushed:', JSON.stringify(adobeEvent, null, 2));
@@ -786,11 +787,9 @@ function buildPageContext() {
  * Shape pushed to adobeDataLayer:
  * {
  *   event: 'PAGE_VIEW',
- *   eventInfo: {
- *     eventId, eventType, source, timestamp,
- *     page: { path, url, title, name, queryString, hash, referrer, language, hostname },
- *     user: { authenticated, customerId, email, firstName, lastName, … }
- *   }
+ *   eventId, eventType, source, timestamp,
+ *   page: { path, url, title, name, queryString, hash, referrer, language, hostname },
+ *   user: { authenticated, customerId, email, firstName, lastName, … }
  * }
  */
 function pushPageView() {
