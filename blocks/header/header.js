@@ -369,6 +369,10 @@ function renderCartPanel() {
       btn.addEventListener('click', () => {
         const updatedCart = removeItemFromCart(btn.dataset.sku);
         updateCartBadge(updatedCart);
+        // If the last item was removed, clear the datalayer cart (betacartId + sessionStorage)
+        if (updatedCart.length === 0 && window.digitalData && typeof window.digitalData.clearCart === 'function') {
+          window.digitalData.clearCart();
+        }
         renderCartPanel();
         openCartPanel();
       });
@@ -392,6 +396,10 @@ function renderCartPanel() {
     footer.querySelector('.cart-clear-btn').addEventListener('click', () => {
       saveCart([]);
       updateCartBadge([]);
+      // Also clear the datalayer cart (betacartId + sessionStorage entries)
+      if (window.digitalData && typeof window.digitalData.clearCart === 'function') {
+        window.digitalData.clearCart();
+      }
       renderCartPanel();
       openCartPanel();
     });
