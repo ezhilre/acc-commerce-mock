@@ -283,7 +283,7 @@ function makeGenderField(id, labelText) {
   placeholder.disabled = true;
   placeholder.selected = true;
 
-  ['Male', 'Female', 'Non-binary', 'Prefer not to say'].forEach((g) => {
+  ['Male', 'Female'].forEach((g) => {
     const opt = document.createElement('option');
     opt.value = g.toLowerCase().replace(/\s+/g, '-');
     opt.textContent = g;

@@ -269,8 +269,8 @@ export default function decorate(block) {
 
     const total = cart.reduce((s, i) => s + (parseFloat((i.price || '0').toString().replace(/[^0-9.]/g, '')) || 0) * (parseInt(i.quantity, 10) || 1), 0);
 
-    // ── Retrieve cartId from datalayer / sessionStorage ──
-    const cartId = (window.digitalData && window.digitalData.cart && window.digitalData.cart.cartId)
+    // ── Retrieve betacartId from datalayer / sessionStorage ──
+    const cartId = (window.digitalData && window.digitalData.cart && window.digitalData.cart.betacartId)
       || sessionStorage.getItem('digitalData_cartId')
       || '';
 
@@ -281,12 +281,12 @@ export default function decorate(block) {
 
     const orderData = {
       orderId: generateOrderId(),
-      cartId,
+      betacartId: cartId,
       date: new Date().toISOString(),
       billingAddress,
       shippingAddress,
       paymentData,
-      items: cart,
+      citems: cart,
       total: total.toFixed(2),
       currency: 'INR',
       customer: {
@@ -311,12 +311,12 @@ export default function decorate(block) {
         paymentStatus: 'SUCCESS',
         order: {
           orderId: orderData.orderId,
-          cartId: orderData.cartId,
+          betacartId: orderData.betacartId,
           date: orderData.date,
           total: orderData.total,
           currency: orderData.currency,
           itemCount: cart.length,
-          items: cart,
+          citems: cart,
           billingAddress,
           shippingAddress,
           payment: {

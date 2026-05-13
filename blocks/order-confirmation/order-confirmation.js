@@ -83,12 +83,12 @@ export default function decorate(block) {
 
   const {
     orderId,
-    cartId = '',
+    betacartId: cartId = '',
     date,
     billingAddress,
     shippingAddress,
     paymentData,
-    items = [],
+    citems: items = [],
     total = '0.00',
   } = order;
 

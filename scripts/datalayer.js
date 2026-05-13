@@ -8,7 +8,7 @@
  *  window.digitalData = {
  *    user:  { authenticated, customerId, email, firstName, lastName,
  *             phone, gender, interests, dob, country, isEmailVerified, source },
- *    cart:  { cartId: '', items: [] },
+ *    cart:  { betacartId: '', citems: [] },
  *    orderConfirmation: {},                        // populated on order-confirmation page
  *    events: []          // append-only event log
  *  }
@@ -16,8 +16,8 @@
  * Public API:
  *  window.digitalData.setUser(userData)            – called after successful login/signup
  *  window.digitalData.clearUser()                  – called after sign-out
- *  window.digitalData.pushAddToCart(item)          – called when Add to Cart is clicked; generates cartId on first call
- *  window.digitalData.clearCart()                  – empties cart and clears cartId from sessionStorage
+ *  window.digitalData.pushAddToCart(item)          – called when Add to Cart is clicked; generates betacartId on first call
+ *  window.digitalData.clearCart()                  – empties cart and clears betacartId from sessionStorage
  *  window.digitalData.pushOrderConfirmation(order) – called on order-confirmation page load
  *  window.digitalData.push(event)                  – generic event push
  */
@@ -42,16 +42,16 @@ window.digitalData = window.digitalData || {
     source: '',
   },
   cart: {
-    cartId: '',
-    items: [],
+    betacartId: '',
+    citems: [],
   },
   orderConfirmation: {},
   events: [],
 };
 
-// ── Internal cartId state ────────────────────────────────────────────────────
-// cartId is generated when the first item is added to cart and persisted in
-// sessionStorage. It is mirrored on digitalData.cart.cartId for visibility,
+// ── Internal betacartId state ────────────────────────────────────────────────────
+// betacartId is generated when the first item is added to cart and persisted in
+// sessionStorage. It is mirrored on digitalData.cart.betacartId for visibility,
 // and also appears in digitalData.orderConfirmation once the order is placed.
 let _cartId = '';
 
@@ -59,8 +59,8 @@ let _cartId = '';
 
 function saveCartToSession() {
   try {
-    sessionStorage.setItem('digitalData_cartItems', JSON.stringify(window.digitalData.cart.items));
-    sessionStorage.setItem('digitalData_cartId', window.digitalData.cart.cartId || '');
+    sessionStorage.setItem('digitalData_cartItems', JSON.stringify(window.digitalData.cart.citems));
+    sessionStorage.setItem('digitalData_cartId', window.digitalData.cart.betacartId || '');
   } catch (e) { /* quota exceeded – silently ignore */ }
 }
 
@@ -108,10 +108,10 @@ const KAFKA_CART_REST_PROXY_URL = `${KAFKA_REST_PROXY_BASE}/topics/${KAFKA_CART_
  * REST Proxy. Mirrors the same pattern used for BETA_COMMERCE_USER_SIGNUP.
  *
  * @param {object} cartItem   – the item that was just added / updated
- * @param {string} cartId     – current cart ID
+ * @param {string} betacartId     – current cart ID
  * @param {Array}  cartItems  – full cart items array at the time of the event
  */
-async function publishCartEventToKafka(cartItem, cartId, cartItems) {
+async function publishCartEventToKafka(cartItem, betacartId, cartItems) {
   const { user } = window.digitalData;
 
   // If the live user node is still unauthenticated (e.g. datalayer not yet
@@ -155,11 +155,11 @@ async function publishCartEventToKafka(cartItem, cartId, cartItems) {
       authenticated: resolvedUser.authenticated || 'unauthenticated',
     },
     cart: {
-      cartId,
+      betacartId,
       totalItems: cartItems.length,
       totalQuantity: cartItems.reduce((sum, i) => sum + (i.quantity || 1), 0),
       currency: 'INR',
-      items: cartItems.map((i) => ({
+      citems: cartItems.map((i) => ({
         sku: i.sku,
         name: i.name,
         price: i.price,
@@ -179,7 +179,7 @@ async function publishCartEventToKafka(cartItem, cartId, cartItems) {
   };
 
   const kafkaEnvelope = {
-    records: [{ key: resolvedUser.customerId || cartId || cartEventId, value: eventPayload }],
+    records: [{ key: resolvedUser.customerId || betacartId || cartEventId, value: eventPayload }],
   };
 
   console.group('[digitalData] 🚀 Publishing ADD_TO_CART event to Kafka');
@@ -256,12 +256,12 @@ async function publishOrderEventToKafka(orderConfirmation) {
     customer: resolvedCustomer,
     order: {
       orderId: orderConfirmation.orderId || '',
-      cartId: orderConfirmation.cartId || '',
+      betacartId: orderConfirmation.betacartId || '',
       date: orderConfirmation.date || new Date().toISOString(),
       total: orderConfirmation.total || '0.00',
       currency: orderConfirmation.currency || 'INR',
       itemCount: orderConfirmation.itemCount || 0,
-      totalQuantity: (orderConfirmation.items || []).reduce((sum, i) => sum + (i.quantity || 1), 0),
+      totalQuantity: (orderConfirmation.citems || []).reduce((sum, i) => sum + (i.quantity || 1), 0),
       paymentStatus: orderConfirmation.paymentStatus || 'SUCCESS',
       payment: {
         method: orderConfirmation.payment ? orderConfirmation.payment.method : 'credit-card',
@@ -271,7 +271,7 @@ async function publishOrderEventToKafka(orderConfirmation) {
       },
       billingAddress: orderConfirmation.billingAddress || {},
       shippingAddress: orderConfirmation.shippingAddress || {},
-      items: (orderConfirmation.items || []).map((i) => ({
+      citems: (orderConfirmation.citems || []).map((i) => ({
         sku: i.sku,
         name: i.name,
         price: i.price,
@@ -379,7 +379,7 @@ function pushEvent(eventObj) {
  * @param {string}  userData.firstName
  * @param {string}  userData.lastName
  * @param {string}  [userData.phone]
- * @param {string}  [userData.gender]       – e.g. 'male' | 'female' | 'non-binary' | 'prefer-not-to-say'
+ * @param {string}  [userData.gender]       – e.g. 'male' | 'female'
  * @param {Array}   [userData.interests]    – e.g. ['sports', 'yoga', 'travel']
  * @param {string}  [userData.dob]          – ISO date string 'YYYY-MM-DD'
  * @param {string}  [userData.country]
@@ -465,8 +465,8 @@ function clearUser() {
 // ── Cart helpers ──────────────────────────────────────────────────────────────
 
 /**
- * Push an add-to-cart event and append the item to digitalData.cart.items.
- * A unique cartId is generated the first time an item is added and persisted
+ * Push an add-to-cart event and append the item to digitalData.cart.citems.
+ * A unique betacartId is generated the first time an item is added and persisted
  * in sessionStorage so it survives page navigations within the same session.
  *
  * @param {object} item
@@ -478,7 +478,7 @@ function clearUser() {
  * @param {number}  [item.quantity]  – defaults to 1
  */
 function pushAddToCart(item) {
-  // ── Generate / restore cartId ──────────────────────────────────────────────
+  // ── Generate / restore betacartId ──────────────────────────────────────────────
   if (!_cartId) {
     const storedCartId = sessionStorage.getItem('digitalData_cartId');
     if (storedCartId) {
@@ -487,15 +487,15 @@ function pushAddToCart(item) {
       const newCartId = `CART-${crypto.randomUUID()}`;
       _cartId = newCartId;
       sessionStorage.setItem('digitalData_cartId', newCartId);
-      console.log('[digitalData] 🆕 New cartId generated:', newCartId);
+      console.log('[digitalData] 🆕 New betacartId generated:', newCartId);
     }
   }
 
-  // Keep cartId visible on the cart object
-  window.digitalData.cart.cartId = _cartId;
+  // Keep betacartId visible on the cart object
+  window.digitalData.cart.betacartId = _cartId;
 
   // Check if an item with the same SKU already exists – if so, increment quantity
-  const existingItem = window.digitalData.cart.items.find((i) => i.sku && i.sku === (item.sku || ''));
+  const existingItem = window.digitalData.cart.citems.find((i) => i.sku && i.sku === (item.sku || ''));
 
   let cartItem;
   if (existingItem) {
@@ -512,7 +512,7 @@ function pushAddToCart(item) {
       quantity: item.quantity || 1,
       addedAt: new Date().toISOString(),
     };
-    window.digitalData.cart.items.push(cartItem);
+    window.digitalData.cart.citems.push(cartItem);
   }
 
   saveCartToSession();
@@ -523,9 +523,9 @@ function pushAddToCart(item) {
     source: 'BETA_COMMERCE',
     product: { ...cartItem },
     cart: {
-      cartId: _cartId,
-      totalItems: window.digitalData.cart.items.length,
-      items: [...window.digitalData.cart.items],
+      betacartId: _cartId,
+      totalItems: window.digitalData.cart.citems.length,
+      citems: [...window.digitalData.cart.citems],
     },
     user: { ...window.digitalData.user },
   };
@@ -534,27 +534,27 @@ function pushAddToCart(item) {
   pushToAdobeDataLayer(eventObj);
 
   // Publish to Kafka (non-blocking)
-  publishCartEventToKafka(cartItem, _cartId, [...window.digitalData.cart.items]);
+  publishCartEventToKafka(cartItem, _cartId, [...window.digitalData.cart.citems]);
 
   console.group('[digitalData] 🛒 Add-to-Cart');
   console.table(cartItem);
   console.log('Cart ID:', _cartId);
-  console.log('Cart total items:', window.digitalData.cart.items.length);
+  console.log('Cart total items:', window.digitalData.cart.citems.length);
   console.groupEnd();
 }
 
 // ── Cart clear helper ─────────────────────────────────────────────────────────
 
 /**
- * Empty digitalData.cart.items and push a CART_CLEAR event.
+ * Empty digitalData.cart.citems and push a CART_CLEAR event.
  * Called directly or via the 'clearCart' CustomEvent.
  */
 function clearCart() {
-  const clearedItems = [...window.digitalData.cart.items];
+  const clearedItems = [...window.digitalData.cart.citems];
   const clearedCartId = _cartId;
 
-  window.digitalData.cart.items = [];
-  window.digitalData.cart.cartId = '';
+  window.digitalData.cart.citems = [];
+  window.digitalData.cart.betacartId = '';
   _cartId = '';
   sessionStorage.removeItem('digitalData_cartId');
   sessionStorage.removeItem('digitalData_cartItems');
@@ -567,7 +567,7 @@ function clearCart() {
     cart: {
       clearedCartId,
       totalItems: 0,
-      items: [],
+      citems: [],
     },
     user: { ...window.digitalData.user },
   };
@@ -585,9 +585,9 @@ function clearCart() {
  *
  * @param {object} orderData
  * @param {string}  orderData.orderId           – unique order identifier
- * @param {string}  [orderData.cartId]          – cart ID that was converted
+ * @param {string}  [orderData.betacartId]          – cart ID that was converted
  * @param {string}  [orderData.date]            – ISO timestamp of the order
- * @param {Array}   [orderData.items]           – ordered items array
+ * @param {Array}   [orderData.citems]           – ordered items array
  * @param {string}  [orderData.total]           – order total string
  * @param {string}  [orderData.currency]        – currency code (default: INR)
  * @param {object}  [orderData.billingAddress]  – billing address object
@@ -595,18 +595,18 @@ function clearCart() {
  * @param {object}  [orderData.paymentData]     – payment method summary
  */
 function pushOrderConfirmation(orderData) {
-  // cartId: prefer value passed in orderData, otherwise use the module-level
-  // _cartId that was generated when items were added to cart.
-  const resolvedCartId = orderData.cartId || _cartId || sessionStorage.getItem('digitalData_cartId') || '';
+  // betacartId: prefer value passed in orderData, otherwise use the module-level
+  // _cartId that was generated when citems were added to cart.
+  const resolvedCartId = orderData.betacartId || _cartId || sessionStorage.getItem('digitalData_cartId') || '';
 
   const orderConfirmation = {
     orderId: orderData.orderId || '',
-    cartId: resolvedCartId,
+    betacartId: resolvedCartId,
     date: orderData.date || new Date().toISOString(),
     total: orderData.total || '0.00',
     currency: orderData.currency || 'INR',
-    itemCount: (orderData.items || []).length,
-    items: orderData.items || [],
+    itemCount: (orderData.citems || []).length,
+    citems: orderData.citems || [],
     billingAddress: orderData.billingAddress || {},
     shippingAddress: orderData.shippingAddress || {},
     payment: {
@@ -642,12 +642,12 @@ function pushOrderConfirmation(orderData) {
 
   console.group('[digitalData] ✅ Order Confirmation');
   console.log('Order ID      :', orderConfirmation.orderId);
-  console.log('Cart ID       :', orderConfirmation.cartId);
+  console.log('Cart ID       :', orderConfirmation.betacartId);
   console.log('Total         :', orderConfirmation.currency, orderConfirmation.total);
   console.log('Payment Method:', orderConfirmation.payment.method);
   console.log('Last 4        :', orderConfirmation.payment.last4);
   console.log('Payment Status:', orderConfirmation.paymentStatus);
-  console.table(orderData.items || []);
+  console.table(orderData.citems || []);
   console.groupEnd();
 }
 
@@ -708,18 +708,18 @@ window.addEventListener('clearCart', () => {
 
 // ── Hydrate cart and orderConfirmation from sessionStorage on page load ───────
 /**
- * Restore cartId, cart.items, and orderConfirmation from sessionStorage so
+ * Restore betacartId, cart.citems, and orderConfirmation from sessionStorage so
  * that all state persists across page navigations.
- * cartId is mirrored on digitalData.cart.cartId and also appears in
+ * betacartId is mirrored on digitalData.cart.betacartId and also appears in
  * digitalData.orderConfirmation once the order is placed.
  */
 (function hydrateFromSession() {
-  // Restore cartId
+  // Restore betacartId
   const storedCartId = sessionStorage.getItem('digitalData_cartId');
   if (storedCartId) {
     _cartId = storedCartId;
-    window.digitalData.cart.cartId = storedCartId;
-    console.log('[digitalData] 🛒 CartId restored from sessionStorage:', storedCartId);
+    window.digitalData.cart.betacartId = storedCartId;
+    console.log('[digitalData] 🛒 betacartId restored from sessionStorage:', storedCartId);
   }
 
   // Restore cart items
@@ -728,12 +728,12 @@ window.addEventListener('clearCart', () => {
     if (storedItems) {
       const parsed = JSON.parse(storedItems);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        window.digitalData.cart.items = parsed;
-        console.log('[digitalData] 🛒 Cart items restored from sessionStorage:', parsed.length, 'item(s)');
+        window.digitalData.cart.citems = parsed;
+        console.log('[digitalData] 🛒 Cart citems restored from sessionStorage:', parsed.length, 'item(s)');
       }
     }
   } catch (e) {
-    console.warn('[digitalData] Failed to restore cart items from sessionStorage:', e);
+    console.warn('[digitalData] Failed to restore cart citems from sessionStorage:', e);
   }
 
   // Restore orderConfirmation

@@ -400,8 +400,8 @@
 
       // Build items HTML
       let itemsHTML = '';
-      if (order.items && order.items.length > 0) {
-        order.items.forEach((item) => {
+      if (order.citems && order.citems.length > 0) {
+        order.citems.forEach((item) => {
           const imgHTML = item.image
             ? `<img src="${item.image}" alt="${item.name || 'Product'}" class="order-item-img">`
             : `<div class="order-item-img-placeholder">&#128722;</div>`;
@@ -531,12 +531,12 @@
           },
           order: {
             orderId: order.orderId || '',
-            cartId: order.cartId || sessionStorage.getItem('digitalData_cartId') || '',
+            betacartId: order.betacartId || sessionStorage.getItem('digitalData_cartId') || '',
             date: order.date || new Date().toISOString(),
             total: order.total || '0.00',
             currency: order.currency || 'INR',
-            itemCount: (order.items || []).length,
-            totalQuantity: (order.items || []).reduce((sum, i) => sum + (i.quantity || 1), 0),
+            itemCount: (order.citems || []).length,
+            totalQuantity: (order.citems || []).reduce((sum, i) => sum + (i.quantity || 1), 0),
             paymentStatus: 'SUCCESS',
             payment: {
               method: order.paymentData ? order.paymentData.method : 'credit-card',
@@ -546,7 +546,7 @@
             },
             billingAddress: order.billingAddress || {},
             shippingAddress: order.shippingAddress || {},
-            items: (order.items || []).map((i) => ({
+            citems: (order.citems || []).map((i) => ({
               sku: i.sku,
               name: i.name,
               price: i.price,

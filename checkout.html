@@ -876,7 +876,7 @@
         billingAddress: billingAddress,
         shippingAddress: shippingAddress,
         paymentData: paymentData,
-        items: JSON.parse(localStorage.getItem('cart') || '[]'),
+        citems: JSON.parse(localStorage.getItem('cart') || '[]'),
         total: document.getElementById('order-total').textContent
       };
 
