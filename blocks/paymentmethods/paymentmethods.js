@@ -286,7 +286,7 @@ export default function decorate(block) {
       billingAddress,
       shippingAddress,
       paymentData,
-      citems: cart,
+      citems: cart.map((i) => ({ ...i, price: parseFloat(i.price) || 0 })),
       total: total.toFixed(2),
       currency: 'INR',
       customer: {
@@ -316,7 +316,7 @@ export default function decorate(block) {
           total: orderData.total,
           currency: orderData.currency,
           itemCount: cart.length,
-          citems: cart,
+          citems: orderData.citems,
           billingAddress,
           shippingAddress,
           payment: {
