@@ -26,38 +26,46 @@ function waitForDigitalData() {
  * Returns a Promise that resolves once window.adobeDataLayer is fully
  * initialised by the Adobe Client Data Layer (ACDL) script.
  *
- * The ACDL script replaces Array.prototype.push on the adobeDataLayer array
- * with its own handler and fires 'adobeDataLayer:ready' on window when done.
+ * ACDL does NOT fire a CustomEvent on window. Instead, when it initialises it
+ * processes every item already in the adobeDataLayer array. If an item is a
+ * function, ACDL calls it immediately with the initialised data-layer instance.
+ * Pushing a resolver function into the array is therefore the only reliable
+ * way to know ACDL is ready — both before and after it has loaded.
  *
- * • If ACDL has already taken over (push !== Array.prototype.push) we
- *   resolve immediately — same fast-path used by ADD_TO_CART at click time.
- * • Otherwise we wait for the 'adobeDataLayer:ready' event with a 3-second
- *   safety timeout so the page never hangs if ACDL is absent.
+ * • If ACDL has already taken over (push !== Array.prototype.push) we resolve
+ *   immediately — the same fast-path that applies when ADD_TO_CART fires on a
+ *   user click (ACDL is always initialised by then).
+ * • Otherwise we push a function into the array. ACDL will call it once it
+ *   finishes initialising, resolving our Promise.
+ * • A 3-second safety timeout ensures the page never hangs if ACDL is absent.
  *
- * ORDER_CONFIRMATION is pushed automatically on page load (unlike ADD_TO_CART
- * which fires on a user click, by which time ACDL is guaranteed to be live).
- * We must therefore wait explicitly before calling pushOrderConfirmation so
- * that the event reaches the fully-initialised ACDL handler, not a plain Array.
+ * ORDER_CONFIRMATION fires automatically on page load, so the ACDL script may
+ * not have run yet. We must wait here to guarantee the event reaches the live
+ * ACDL handler rather than a plain unprocessed Array.
  */
 function waitForAdobeDataLayer() {
   return new Promise((resolve) => {
-    // ACDL already initialised – its script replaces the native Array push
-    if (
-      window.adobeDataLayer
-      && window.adobeDataLayer.push !== Array.prototype.push
-    ) {
+    // Ensure the array exists so we can push into it
+    window.adobeDataLayer = window.adobeDataLayer || [];
+
+    // Fast path: ACDL already initialised (its script replaces Array.prototype.push)
+    if (window.adobeDataLayer.push !== Array.prototype.push) {
       resolve(window.adobeDataLayer);
       return;
     }
+
+    // Safety timeout – resolves if ACDL never loads (e.g. blocked, absent)
     const timeout = setTimeout(() => {
-      console.warn('[order-confirmation] adobeDataLayer:ready timeout – proceeding with available layer');
-      window.adobeDataLayer = window.adobeDataLayer || [];
+      console.warn('[order-confirmation] adobeDataLayer init timeout – proceeding with available layer');
       resolve(window.adobeDataLayer);
     }, 3000);
-    window.addEventListener('adobeDataLayer:ready', () => {
+
+    // Push a function: ACDL calls any function it finds in the queue once it
+    // has fully initialised, passing the live data-layer instance as argument.
+    window.adobeDataLayer.push(function onAcdlReady() {
       clearTimeout(timeout);
       resolve(window.adobeDataLayer);
-    }, { once: true });
+    });
   });
 }
 

@@ -348,23 +348,27 @@ async function publishOrderEventToKafka(orderConfirmation) {
  */
 function waitForAdobeDataLayer() {
   return new Promise((resolve) => {
-    // ACDL already initialised – its script replaces the native Array push
-    if (
-      window.adobeDataLayer
-      && window.adobeDataLayer.push !== Array.prototype.push
-    ) {
+    // Ensure the array exists so we can push into it
+    window.adobeDataLayer = window.adobeDataLayer || [];
+
+    // Fast path: ACDL already initialised (its script replaces Array.prototype.push)
+    if (window.adobeDataLayer.push !== Array.prototype.push) {
       resolve(window.adobeDataLayer);
       return;
     }
+
+    // Safety timeout – resolves if ACDL never loads (e.g. blocked, absent)
     const timeout = setTimeout(() => {
-      console.warn('[digitalData] adobeDataLayer:ready timeout – pushing with available layer');
-      window.adobeDataLayer = window.adobeDataLayer || [];
+      console.warn('[digitalData] adobeDataLayer init timeout – proceeding with available layer');
       resolve(window.adobeDataLayer);
     }, 3000);
-    window.addEventListener('adobeDataLayer:ready', () => {
+
+    // Push a function: ACDL calls any function it finds in the queue once it
+    // has fully initialised, passing the live data-layer instance as argument.
+    window.adobeDataLayer.push(function onAcdlReady() {
       clearTimeout(timeout);
       resolve(window.adobeDataLayer);
-    }, { once: true });
+    });
   });
 }
 

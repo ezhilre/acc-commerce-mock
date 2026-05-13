@@ -586,18 +586,77 @@
       }
     }
 
+    /**
+     * Returns a Promise that resolves once window.digitalData is fully hydrated
+     * (cookie + sessionStorage). Mirrors the same guard in order-confirmation.js.
+     */
+    function waitForDigitalData() {
+      return new Promise((resolve) => {
+        if (window.digitalData && window.digitalData.pushOrderConfirmation) {
+          resolve(window.digitalData);
+          return;
+        }
+        const timeout = setTimeout(() => {
+          console.warn('[order-confirmation] digitalDataReady timeout – proceeding with available data');
+          resolve(window.digitalData || {});
+        }, 3000);
+        window.addEventListener('digitalDataReady', (e) => {
+          clearTimeout(timeout);
+          resolve(e.detail || window.digitalData || {});
+        }, { once: true });
+      });
+    }
+
+    /**
+     * Returns a Promise that resolves once window.adobeDataLayer is fully
+     * initialised by the Adobe Client Data Layer (ACDL) script.
+     *
+     * ORDER_CONFIRMATION fires automatically on page load (unlike ADD_TO_CART
+     * which fires on a user click — by which time ACDL is always initialised).
+     * We must wait explicitly so the event reaches the live ACDL handler,
+     * not a plain Array that was never processed.
+     */
+    function waitForAdobeDataLayer() {
+      return new Promise((resolve) => {
+        if (
+          window.adobeDataLayer
+          && window.adobeDataLayer.push !== Array.prototype.push
+        ) {
+          resolve(window.adobeDataLayer);
+          return;
+        }
+        const timeout = setTimeout(() => {
+          console.warn('[order-confirmation] adobeDataLayer:ready timeout – proceeding with available layer');
+          window.adobeDataLayer = window.adobeDataLayer || [];
+          resolve(window.adobeDataLayer);
+        }, 3000);
+        window.addEventListener('adobeDataLayer:ready', () => {
+          clearTimeout(timeout);
+          resolve(window.adobeDataLayer);
+        }, { once: true });
+      });
+    }
+
     function init() {
       try {
         const orderData = localStorage.getItem('lastOrder');
         if (orderData) {
           const order = JSON.parse(orderData);
           renderConfirmation(order);
-          // Publish ORDER_CONFIRMATION event to Kafka
+          // Publish ORDER_CONFIRMATION event to Kafka (no ACDL dependency)
           publishToKafka(order);
-          // Also push to datalayer if available
-          if (window.digitalData && window.digitalData.pushOrderConfirmation) {
-            window.digitalData.pushOrderConfirmation(order);
-          }
+          // Push to datalayer — wait for BOTH digitalData (user hydration) AND
+          // adobeDataLayer (ACDL script init) before calling pushOrderConfirmation.
+          // This matches the ADD_TO_CART approach: add-to-cart fires on a user
+          // click so ACDL is always ready; here we reproduce that guarantee with
+          // Promise.all since the event fires automatically on page load.
+          Promise.all([waitForDigitalData(), waitForAdobeDataLayer()]).then(([dd]) => {
+            if (dd && dd.pushOrderConfirmation) {
+              dd.pushOrderConfirmation(order);
+            } else {
+              console.warn('[order-confirmation] datalayer not available; ORDER_CONFIRMATION not pushed to adobeDataLayer');
+            }
+          });
         } else {
           renderNoOrder();
         }
