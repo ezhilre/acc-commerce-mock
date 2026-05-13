@@ -256,7 +256,7 @@ async function publishOrderEventToKafka(orderConfirmation) {
     customer: resolvedCustomer,
     order: {
       orderId: orderConfirmation.orderId || '',
-      betacartId: orderConfirmation.betacartId || '',
+      ...(orderConfirmation.betacartId ? { betacartId: orderConfirmation.betacartId } : {}),
       date: orderConfirmation.date || new Date().toISOString(),
       total: parseFloat(orderConfirmation.total) || 0,
       currency: orderConfirmation.currency || 'INR',
@@ -644,7 +644,7 @@ function pushOrderConfirmation(orderData) {
 
   const orderConfirmation = {
     orderId: orderData.orderId || '',
-    betacartId: resolvedCartId,
+    ...(resolvedCartId ? { betacartId: resolvedCartId } : {}),
     date: orderData.date || new Date().toISOString(),
     total: parseFloat(orderData.total) || 0,
     currency: orderData.currency || 'INR',
