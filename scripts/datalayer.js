@@ -633,7 +633,7 @@ function clearCart() {
  * @param {object}  [orderData.shippingAddress] – shipping address object
  * @param {object}  [orderData.paymentData]     – payment method summary
  */
-async function pushOrderConfirmation(orderData) {
+function pushOrderConfirmation(orderData) {
   // betacartId: prefer value passed in orderData, otherwise use the module-level
   // _cartId that was generated when citems were added to cart.
   const resolvedCartId = orderData.betacartId || _cartId || sessionStorage.getItem('digitalData_cartId') || '';
@@ -674,15 +674,6 @@ async function pushOrderConfirmation(orderData) {
   };
 
   pushEvent(eventObj);
-
-  // Wait for the Adobe Client Data Layer to be fully initialised before
-  // pushing the ORDER_CONFIRMATION event.  This mirrors the waitForDigitalData()
-  // guard used in order-confirmation.js: the block's decorate() fires
-  // automatically on page load, so the ACDL script may not yet have replaced
-  // the plain Array push with its own handler by the time we get here.
-  // ADD_TO_CART does not need this guard because it is always triggered by a
-  // user click, which occurs well after the ACDL script has initialised.
-  await waitForAdobeDataLayer();
   pushToAdobeDataLayer(eventObj);
 
   // Publish to Kafka (non-blocking)

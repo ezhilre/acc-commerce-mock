@@ -22,6 +22,45 @@ function waitForDigitalData() {
   });
 }
 
+/**
+ * Returns a Promise that resolves once window.adobeDataLayer is fully
+ * initialised by the Adobe Client Data Layer (ACDL) script.
+ *
+ * The ACDL script replaces Array.prototype.push on the adobeDataLayer array
+ * with its own handler and fires 'adobeDataLayer:ready' on window when done.
+ *
+ * • If ACDL has already taken over (push !== Array.prototype.push) we
+ *   resolve immediately — same fast-path used by ADD_TO_CART at click time.
+ * • Otherwise we wait for the 'adobeDataLayer:ready' event with a 3-second
+ *   safety timeout so the page never hangs if ACDL is absent.
+ *
+ * ORDER_CONFIRMATION is pushed automatically on page load (unlike ADD_TO_CART
+ * which fires on a user click, by which time ACDL is guaranteed to be live).
+ * We must therefore wait explicitly before calling pushOrderConfirmation so
+ * that the event reaches the fully-initialised ACDL handler, not a plain Array.
+ */
+function waitForAdobeDataLayer() {
+  return new Promise((resolve) => {
+    // ACDL already initialised – its script replaces the native Array push
+    if (
+      window.adobeDataLayer
+      && window.adobeDataLayer.push !== Array.prototype.push
+    ) {
+      resolve(window.adobeDataLayer);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      console.warn('[order-confirmation] adobeDataLayer:ready timeout – proceeding with available layer');
+      window.adobeDataLayer = window.adobeDataLayer || [];
+      resolve(window.adobeDataLayer);
+    }, 3000);
+    window.addEventListener('adobeDataLayer:ready', () => {
+      clearTimeout(timeout);
+      resolve(window.adobeDataLayer);
+    }, { once: true });
+  });
+}
+
 function formatDate(isoString) {
   try {
     return new Date(isoString).toLocaleDateString('en-US', {
@@ -66,11 +105,13 @@ export default function decorate(block) {
     return;
   }
 
-  // ── Publish ORDER_CONFIRMATION event to Kafka via datalayer ──────────────
-  // Wait for datalayer.js to finish hydrating user data from cookie/session
-  // before calling pushOrderConfirmation so that customerId, email and
-  // eventId are never empty in the Kafka payload.
-  waitForDigitalData().then((dd) => {
+  // ── Publish ORDER_CONFIRMATION event via datalayer ────────────────────────
+  // ORDER_CONFIRMATION fires automatically on page load, so we must wait for
+  // BOTH digitalData (user hydration) AND adobeDataLayer (ACDL script init)
+  // before calling pushOrderConfirmation. This matches the ADD_TO_CART pattern:
+  // add-to-cart fires on a user click — well after ACDL has initialised — so
+  // it never races. Here we reproduce that guarantee explicitly with Promise.all.
+  Promise.all([waitForDigitalData(), waitForAdobeDataLayer()]).then(([dd]) => {
     if (dd && dd.pushOrderConfirmation) {
       dd.pushOrderConfirmation(order);
     } else {
