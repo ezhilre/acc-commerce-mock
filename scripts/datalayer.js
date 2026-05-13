@@ -266,7 +266,7 @@ async function publishOrderEventToKafka(orderConfirmation) {
       payment: {
         method: orderConfirmation.payment ? orderConfirmation.payment.method : 'credit-card',
         last4: orderConfirmation.payment ? orderConfirmation.payment.last4 : '',
-        cardType: orderConfirmation.payment ? (orderConfirmation.payment.cardType || '') : '',
+        cardType: orderConfirmation.payment ? (orderConfirmation.payment.cardType || 'visa') : 'visa',
         status: orderConfirmation.payment ? (orderConfirmation.payment.status || 'SUCCESS') : 'SUCCESS',
       },
       billingAddress: orderConfirmation.billingAddress || {},
@@ -658,7 +658,7 @@ function pushOrderConfirmation(orderData) {
     payment: {
       method: orderData.paymentData ? orderData.paymentData.method : 'credit-card',
       last4: orderData.paymentData ? orderData.paymentData.last4 : '',
-      cardType: orderData.paymentData ? (orderData.paymentData.cardType || '') : '',
+      cardType: orderData.paymentData ? (orderData.paymentData.cardType || 'visa') : 'visa',
       status: 'SUCCESS',
     },
     paymentStatus: 'SUCCESS',
