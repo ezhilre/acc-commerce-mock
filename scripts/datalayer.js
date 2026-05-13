@@ -500,7 +500,6 @@ function pushAddToCart(item) {
   let cartItem;
   if (existingItem) {
     existingItem.quantity += (item.quantity || 1);
-    existingItem.addedAt = new Date().toISOString();
     cartItem = existingItem;
   } else {
     cartItem = {
@@ -510,7 +509,6 @@ function pushAddToCart(item) {
       image: item.image || '',
       category: item.category || '',
       quantity: item.quantity || 1,
-      addedAt: new Date().toISOString(),
     };
     window.digitalData.cart.citems.push(cartItem);
   }
