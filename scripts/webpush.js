@@ -20,10 +20,8 @@ const VAPID_PUBLIC_KEY =
 // ─── Service-worker path (must be at root so its scope covers the whole site) ──
 const SW_PATH = '/sw.js';
 
-// ─── Storage key used to avoid re-subscribing on every page load ──────────────
-// Versioned so that any format change automatically invalidates old records
-// and forces a fresh AJO registration.
-const STORAGE_KEY = 'acc_push_subscribed_v2';
+// ─── Storage key — kept only to clean up legacy records ──────────────────────
+const LEGACY_KEYS = ['acc_push_subscribed', 'acc_push_subscribed_v2'];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -173,48 +171,13 @@ async function registerWithAJO(subscription) {
 }
 
 /**
- * Persist subscription JSON + current identity fingerprint to localStorage
- * so we can detect both stale push tokens and identity changes.
- * @param {PushSubscription} subscription
+ * Remove any legacy localStorage keys from previous versions.
+ * Called once on init so old cached records don't cause stale-skip bugs.
  */
-function persistSubscription(subscription) {
+function clearLegacyStorage() {
   try {
-    const record = {
-      ...subscription.toJSON(),
-      // Include a fingerprint of the current identity so we re-register
-      // whenever the logged-in user changes (e.g. email updates).
-      _identity: localStorage.getItem('acc_user_email') || '',
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
-  } catch {
-    // Storage unavailable — not critical
-  }
-}
-
-/**
- * Returns true ONLY when:
- *  1. The stored push endpoint still matches the live subscription, AND
- *  2. The stored identity fingerprint matches the current identity.
- *
- * If either changes, we re-register with AJO so the subscription is always
- * tied to the correct identity.
- *
- * @param {PushSubscription} subscription
- * @returns {boolean}
- */
-function isSubscriptionFresh(subscription) {
-  try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-    if (!stored) return false;
-
-    const endpointMatch = stored.endpoint === subscription.toJSON().endpoint;
-    const currentIdentity = localStorage.getItem('acc_user_email') || '';
-    const identityMatch = (stored._identity || '') === currentIdentity;
-
-    return endpointMatch && identityMatch;
-  } catch {
-    return false;
-  }
+    LEGACY_KEYS.forEach((k) => localStorage.removeItem(k));
+  } catch { /* ignore */ }
 }
 
 // ─── Push Subscription Change Listener ───────────────────────────────────────
@@ -237,7 +200,6 @@ function listenForSubscriptionChanges() {
         .then((reg) => reg.pushManager.getSubscription())
         .then((subscription) => {
           if (subscription) {
-            persistSubscription(subscription);
             return registerWithAJO(subscription);
           }
           return null;
@@ -276,6 +238,9 @@ export async function initWebPush({ immediate = false } = {}) {
     console.warn('[WebPush] Push notifications are not supported in this browser.');
     return { status: 'unsupported' };
   }
+
+  // Clean up any stale localStorage records from previous code versions
+  clearLegacyStorage();
 
   let registration;
   try {
@@ -334,14 +299,10 @@ export async function initWebPush({ immediate = false } = {}) {
     return { status: 'subscription-failed', error: err };
   }
 
-  // ── Register with AJO (only when subscription is new / changed) ───────────
-  if (!isSubscriptionFresh(subscription)) {
-    persistSubscription(subscription);
-    await registerWithAJO(subscription);
-  } else {
-    // eslint-disable-next-line no-console
-    console.log('[WebPush] Subscription is already registered and fresh.');
-  }
+  // ── Register with AJO on every page load ─────────────────────────────────
+  // alloy deduplicates on the server side; always sending ensures the
+  // identity and subscription token are always in sync with AJO.
+  await registerWithAJO(subscription);
 
   return { status: 'granted', subscription };
 }
@@ -364,9 +325,7 @@ export async function unsubscribeWebPush() {
 
   await subscription.unsubscribe();
 
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch { /* ignore */ }
+  clearLegacyStorage();
 
   // Optionally inform AJO that the token is no longer valid
   if (typeof window.alloy === 'function') {
