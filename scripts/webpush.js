@@ -21,7 +21,9 @@ const VAPID_PUBLIC_KEY =
 const SW_PATH = '/sw.js';
 
 // ─── Storage key used to avoid re-subscribing on every page load ──────────────
-const STORAGE_KEY = 'acc_push_subscribed';
+// Versioned so that any format change automatically invalidates old records
+// and forces a fresh AJO registration.
+const STORAGE_KEY = 'acc_push_subscribed_v2';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
