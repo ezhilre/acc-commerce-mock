@@ -37,24 +37,38 @@ self.addEventListener('push', (event) => {
   }
 
   const title = data.title || 'ACC Commerce';
+
+  // Build options — omit keys with undefined/null values to avoid
+  // silent browser rejections on subsequent notifications.
   const options = {
     body: data.body || 'You have a new notification.',
     icon: data.icon || '/icons/icon-192.png',
     badge: data.badge || '/icons/badge-72.png',
-    image: data.image || undefined,
     data: {
       url: data.url || '/',
       campaignId: data.campaignId || '',
       messageId: data.messageId || '',
     },
-    actions: data.actions || [],
+    // Use a unique tag per notification so every push is shown as a NEW
+    // notification rather than silently replacing the previous one.
+    // AJO can supply its own tag via the payload to group related alerts.
+    tag: data.tag || `acc-push-${Date.now()}`,
+    // renotify must be true when a tag IS provided so the user sees/hears it
+    renotify: true,
     requireInteraction: data.requireInteraction || false,
     silent: data.silent || false,
-    tag: data.tag || 'acc-push',
-    renotify: data.renotify || false,
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  // Only include optional fields when explicitly provided
+  if (data.image) options.image = data.image;
+  if (data.actions && data.actions.length) options.actions = data.actions;
+
+  event.waitUntil(
+    self.registration.showNotification(title, options).catch((err) => {
+      // Log and swallow — prevents the SW from crashing on bad payloads
+      console.error('[SW] showNotification failed:', err, { title, options });
+    }),
+  );
 });
 
 // ─── Notification Click ───────────────────────────────────────────────────────
