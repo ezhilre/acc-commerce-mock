@@ -136,7 +136,11 @@ async function registerWithAJO(subscription) {
           platform: 'web',
           denylisted: false,
           identity: {
-            namespace: { code: 'ECID' },
+            "email": [
+      {
+        "id": "ezhilarasur+bc001@adobe.com"
+      }
+    ]
           },
         },
         // Pass the full subscription for AJO to store
