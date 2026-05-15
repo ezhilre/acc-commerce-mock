@@ -176,6 +176,13 @@ body.acc-push-banner-open {
 
 function isDismissed() {
   try {
+    // If the browser permission has been reset to 'default' by the user
+    // (e.g. via browser settings), treat any previously stored dismissal
+    // as stale and clear it so the banner shows again.
+    if (Notification.permission === 'default') {
+      localStorage.removeItem(DISMISSED_KEY);
+      return false;
+    }
     return !!localStorage.getItem(DISMISSED_KEY);
   } catch {
     return false;
