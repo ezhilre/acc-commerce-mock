@@ -126,36 +126,44 @@ async function registerWithAJO(subscription) {
 
   const subJson = subscription.toJSON();
 
+  // Resolve identity: prefer the ECID from alloy if available,
+  // otherwise fall back to any email stored by the page (e.g. post-login).
+  let identityMap;
   try {
-    await window.alloy('sendEvent', {
-      xdm: {
-        eventType: 'pushNotificationSubscribed',
-        pushNotificationDetails: {
-          appID: window.location.hostname,
-          token: subJson.keys.p256dh,          // public key of the subscription
-          platform: 'web',
-          denylisted: false,
-          "identityMap": {
-    "email": [
-      {
-        "id": "ezhilarasur+bc001@adobe.com"
-      }
-    ]
-  },
-        },
-        // Pass the full subscription for AJO to store
-        _experience: {
-          customerJourneyManagement: {
-            pushChannelContext: {
-              platform: 'web',
-              endpoint: subJson.endpoint,
-              p256dh: subJson.keys.p256dh,
-              auth: subJson.keys.auth,
-            },
+    // Check if the page has stored a known email identity after login
+    const storedEmail = localStorage.getItem('acc_user_email');
+    if (storedEmail) {
+      identityMap = {
+        email: [{ id: storedEmail, primary: true, authenticatedState: 'authenticated' }],
+      };
+    }
+  } catch { /* ignore */ }
+
+  try {
+    const xdm = {
+      eventType: 'pushNotificationSubscribed',
+      // identityMap must be a TOP-LEVEL XDM field — NOT inside pushNotificationDetails
+      ...(identityMap && { identityMap }),
+      pushNotificationDetails: {
+        appID: window.location.hostname,
+        token: subJson.keys.p256dh,
+        platform: 'web',
+        denylisted: false,
+      },
+      // Pass the full subscription for AJO to store
+      _experience: {
+        customerJourneyManagement: {
+          pushChannelContext: {
+            platform: 'web',
+            endpoint: subJson.endpoint,
+            p256dh: subJson.keys.p256dh,
+            auth: subJson.keys.auth,
           },
         },
       },
-    });
+    };
+
+    await window.alloy('sendEvent', { xdm });
     // eslint-disable-next-line no-console
     console.log('[WebPush] Subscription registered with AJO successfully.');
   } catch (err) {
@@ -165,26 +173,45 @@ async function registerWithAJO(subscription) {
 }
 
 /**
- * Persist subscription JSON to localStorage so we can detect stale tokens.
+ * Persist subscription JSON + current identity fingerprint to localStorage
+ * so we can detect both stale push tokens and identity changes.
  * @param {PushSubscription} subscription
  */
 function persistSubscription(subscription) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(subscription.toJSON()));
+    const record = {
+      ...subscription.toJSON(),
+      // Include a fingerprint of the current identity so we re-register
+      // whenever the logged-in user changes (e.g. email updates).
+      _identity: localStorage.getItem('acc_user_email') || '',
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
   } catch {
     // Storage unavailable — not critical
   }
 }
 
 /**
- * Returns true when the locally stored subscription matches the live one.
+ * Returns true ONLY when:
+ *  1. The stored push endpoint still matches the live subscription, AND
+ *  2. The stored identity fingerprint matches the current identity.
+ *
+ * If either changes, we re-register with AJO so the subscription is always
+ * tied to the correct identity.
+ *
  * @param {PushSubscription} subscription
  * @returns {boolean}
  */
 function isSubscriptionFresh(subscription) {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-    return stored && stored.endpoint === subscription.toJSON().endpoint;
+    if (!stored) return false;
+
+    const endpointMatch = stored.endpoint === subscription.toJSON().endpoint;
+    const currentIdentity = localStorage.getItem('acc_user_email') || '';
+    const identityMatch = (stored._identity || '') === currentIdentity;
+
+    return endpointMatch && identityMatch;
   } catch {
     return false;
   }
@@ -195,19 +222,33 @@ function isSubscriptionFresh(subscription) {
 /**
  * Listen for SW messages about renewed subscriptions (pushsubscriptionchange)
  * and re-register them with AJO.
+ *
+ * Note: the listener is synchronous (does NOT return true) to avoid the
+ * "message channel closed before a response was received" browser warning
+ * that occurs when an async message handler doesn't respond in time.
  */
 function listenForSubscriptionChanges() {
-  navigator.serviceWorker.addEventListener('message', async (event) => {
+  navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'PUSH_SUBSCRIPTION_CHANGE') {
       // eslint-disable-next-line no-console
       console.log('[WebPush] Subscription renewed — re-registering with AJO.');
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      if (subscription) {
-        persistSubscription(subscription);
-        await registerWithAJO(subscription);
-      }
+      // Fire-and-forget: don't return the Promise to the message channel
+      navigator.serviceWorker.ready
+        .then((reg) => reg.pushManager.getSubscription())
+        .then((subscription) => {
+          if (subscription) {
+            persistSubscription(subscription);
+            return registerWithAJO(subscription);
+          }
+          return null;
+        })
+        .catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error('[WebPush] Failed to re-register after subscription change:', err);
+        });
     }
+    // Intentionally return undefined (not true / not a Promise) so the
+    // browser does not keep the message channel open and produce warnings.
   });
 }
 
