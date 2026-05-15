@@ -135,13 +135,13 @@ async function registerWithAJO(subscription) {
           token: subJson.keys.p256dh,          // public key of the subscription
           platform: 'web',
           denylisted: false,
-          identity: {
-            "email": [
+          "identityMap": {
+    "email": [
       {
         "id": "ezhilarasur+bc001@adobe.com"
       }
     ]
-          },
+  },
         },
         // Pass the full subscription for AJO to store
         _experience: {
