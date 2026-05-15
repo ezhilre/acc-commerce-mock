@@ -128,24 +128,22 @@ async function registerWithAJO(subscription) {
 
   const subJson = subscription.toJSON();
 
-  // Resolve identity: prefer the ECID from alloy if available,
-  // otherwise fall back to any email stored by the page (e.g. post-login).
+  // Build identityMap — always sent as a top-level XDM field.
+  // Falls back to the hardcoded test identity when no email is found in
+  // localStorage (e.g. before the user has logged in).
   let identityMap;
   try {
-    // Check if the page has stored a known email identity after login
-    const storedEmail = localStorage.getItem('acc_user_email');
-    if (storedEmail) {
-      identityMap = {
-        email: [{ id: storedEmail, primary: true, authenticatedState: 'authenticated' }],
-      };
-    }
+    const storedEmail = localStorage.getItem('acc_user_email') || 'ezhilarasur+bc001@adobe.com';
+    identityMap = {
+      email: [{ id: storedEmail }],
+    };
   } catch { /* ignore */ }
 
   try {
     const xdm = {
       eventType: 'pushNotificationSubscribed',
       // identityMap must be a TOP-LEVEL XDM field — NOT inside pushNotificationDetails
-      ...(identityMap && { identityMap }),
+      identityMap,
       pushNotificationDetails: {
         appID: window.location.hostname,
         token: subJson.keys.p256dh,
