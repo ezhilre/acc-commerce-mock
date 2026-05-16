@@ -263,7 +263,7 @@ function renderDefault(banner) {
       Get instant updates on orders, offers &amp; more — right in your browser.
     </span>
     <span class="acc-push-banner__actions">
-      <button class="acc-push-banner__btn acc-push-banner__btn--allow" id="acc-push-allow">
+      <button class="acc-push-banner__btn acc-push-banner__btn--allow" id="enable-beta-web-notifications">
         ${BELL_ICON} Allow notifications
       </button>
       <button class="acc-push-banner__btn acc-push-banner__btn--dismiss" id="acc-push-dismiss">
@@ -305,7 +305,7 @@ function renderBlocked(banner) {
 }
 
 function renderLoading(banner) {
-  const allowBtn = banner.querySelector('#acc-push-allow');
+  const allowBtn = banner.querySelector('#enable-beta-web-notifications');
   const dismissBtn = banner.querySelector('#acc-push-dismiss');
   if (allowBtn) {
     allowBtn.disabled = true;
@@ -382,7 +382,7 @@ async function handleAllow(banner) {
 }
 
 function attachButtonListeners(banner) {
-  const allowBtn = banner.querySelector('#acc-push-allow');
+  const allowBtn = banner.querySelector('#enable-beta-web-notifications');
   const dismissBtn = banner.querySelector('#acc-push-dismiss');
 
   if (allowBtn) allowBtn.addEventListener('click', () => handleAllow(banner), { once: true });
