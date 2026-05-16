@@ -1,16 +1,14 @@
 /**
- * Web Push Notification module for Adobe Journey Optimizer (AJO)
+ * Web Push Notification module
  *
- * Flow:
+ * Responsibilities:
  *  1. Register /sw.js as the service worker
- *  2. Request Notification permission from the user (deferred until a
- *     meaningful interaction so browsers don't auto-block it)
+ *  2. Request Notification permission from the user
  *  3. Subscribe to the browser's Push Manager using the VAPID public key
- *  4. Send the PushSubscription to AJO so it can target this device
+ *  4. Return the PushSubscription object to the caller
  *
- * AJO Web Push relies on the Adobe Web SDK (alloy) being present on the
- * page.  The subscription details are passed via the
- * `pushNotificationSubscribed` XDM event.
+ * AJO / alloy integration is handled externally via the Web SDK.
+ * This module is purely concerned with browser-side push mechanics.
  */
 
 // ─── VAPID public key (set in AJO → Channel surfaces → Web push) ─────────────
@@ -19,9 +17,6 @@ const VAPID_PUBLIC_KEY =
 
 // ─── Service-worker path (must be at root so its scope covers the whole site) ──
 const SW_PATH = '/sw.js';
-
-// ─── Storage key — kept only to clean up legacy records ──────────────────────
-const LEGACY_KEYS = ['acc_push_subscribed', 'acc_push_subscribed_v2'];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -85,9 +80,7 @@ async function registerServiceWorker() {
 async function requestPermission() {
   if (Notification.permission === 'granted') return 'granted';
   if (Notification.permission === 'denied') return 'denied';
-
-  const permission = await Notification.requestPermission();
-  return permission;
+  return Notification.requestPermission();
 }
 
 // ─── Push Subscription ────────────────────────────────────────────────────────
@@ -98,7 +91,6 @@ async function requestPermission() {
  * @returns {Promise<PushSubscription>}
  */
 async function subscribeToPush(registration) {
-  // Return any existing subscription first
   const existing = await registration.pushManager.getSubscription();
   if (existing) return existing;
 
@@ -108,109 +100,36 @@ async function subscribeToPush(registration) {
   });
 }
 
-// ─── AJO Integration ─────────────────────────────────────────────────────────
-
-/**
- * Send the push subscription to Adobe Journey Optimizer via the Web SDK
- * (window.alloy).  The XDM schema follows the AJO web-push channel spec.
- *
- * @param {PushSubscription} subscription
- * @returns {Promise<void>}
- */
-async function registerWithAJO(subscription) {
-  if (typeof window.alloy !== 'function') {
-    // eslint-disable-next-line no-console
-    console.warn('[WebPush] Adobe Web SDK (alloy) not found. Subscription stored locally only.');
-    return;
-  }
-
-  const subJson = subscription.toJSON();
-
-  // Build identityMap — always sent as a top-level XDM field.
-  // Falls back to the hardcoded test identity when no email is found in
-  // localStorage (e.g. before the user has logged in).
-  let identityMap;
-  try {
-    const storedEmail = localStorage.getItem('acc_user_email') || 'ezhilarasur+bc001@adobe.com';
-    identityMap = {
-      email: [{ id: storedEmail }],
-    };
-  } catch { /* ignore */ }
-
-  try {
-    const xdm = {
-      eventType: 'pushNotificationSubscribed',
-      // identityMap must be a TOP-LEVEL XDM field — NOT inside pushNotificationDetails
-      identityMap,
-      pushNotificationDetails: {
-        appID: window.location.hostname,
-        token: subJson.keys.p256dh,
-        platform: 'web',
-        denylisted: false,
-      },
-      // Pass the full subscription for AJO to store
-      _experience: {
-        customerJourneyManagement: {
-          pushChannelContext: {
-            platform: 'web',
-            endpoint: subJson.endpoint,
-            p256dh: subJson.keys.p256dh,
-            auth: subJson.keys.auth,
-          },
-        },
-      },
-    };
-
-    await window.alloy('sendEvent', { xdm });
-    // eslint-disable-next-line no-console
-    console.log('[WebPush] Subscription registered with AJO successfully.');
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('[WebPush] Failed to register subscription with AJO:', err);
-  }
-}
-
-/**
- * Remove any legacy localStorage keys from previous versions.
- * Called once on init so old cached records don't cause stale-skip bugs.
- */
-function clearLegacyStorage() {
-  try {
-    LEGACY_KEYS.forEach((k) => localStorage.removeItem(k));
-  } catch { /* ignore */ }
-}
-
 // ─── Push Subscription Change Listener ───────────────────────────────────────
 
 /**
- * Listen for SW messages about renewed subscriptions (pushsubscriptionchange)
- * and re-register them with AJO.
+ * Listen for SW messages about renewed subscriptions (pushsubscriptionchange).
+ * Fires the optional onRenew callback so the caller (Web SDK layer) can
+ * re-register the new subscription with AJO.
  *
- * Note: the listener is synchronous (does NOT return true) to avoid the
- * "message channel closed before a response was received" browser warning
- * that occurs when an async message handler doesn't respond in time.
+ * The listener is intentionally synchronous (returns undefined) to avoid the
+ * "message channel closed before a response was received" browser warning.
+ *
+ * @param {function(PushSubscription): void} [onRenew]
  */
-function listenForSubscriptionChanges() {
+function listenForSubscriptionChanges(onRenew) {
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'PUSH_SUBSCRIPTION_CHANGE') {
       // eslint-disable-next-line no-console
-      console.log('[WebPush] Subscription renewed — re-registering with AJO.');
-      // Fire-and-forget: don't return the Promise to the message channel
-      navigator.serviceWorker.ready
-        .then((reg) => reg.pushManager.getSubscription())
-        .then((subscription) => {
-          if (subscription) {
-            return registerWithAJO(subscription);
-          }
-          return null;
-        })
-        .catch((err) => {
-          // eslint-disable-next-line no-console
-          console.error('[WebPush] Failed to re-register after subscription change:', err);
-        });
+      console.log('[WebPush] Subscription renewed.');
+      if (typeof onRenew === 'function') {
+        navigator.serviceWorker.ready
+          .then((reg) => reg.pushManager.getSubscription())
+          .then((subscription) => {
+            if (subscription) onRenew(subscription);
+          })
+          .catch((err) => {
+            // eslint-disable-next-line no-console
+            console.error('[WebPush] Failed to retrieve renewed subscription:', err);
+          });
+      }
     }
-    // Intentionally return undefined (not true / not a Promise) so the
-    // browser does not keep the message channel open and produce warnings.
+    // Return undefined — don't hold the message channel open.
   });
 }
 
@@ -219,28 +138,26 @@ function listenForSubscriptionChanges() {
 /**
  * Initialise web push:
  *  - Registers the service worker
- *  - Requests permission (only if not already decided)
- *  - Subscribes to push
- *  - Registers the subscription with AJO
- *
- * Call this after a meaningful user interaction (e.g. button click, page scroll)
- * to maximise browser opt-in rates.
+ *  - Requests Notification permission from the user
+ *  - Creates (or retrieves) the PushSubscription
+ *  - Returns the subscription so the caller can pass it to AJO / alloy
  *
  * @param {object} [options]
  * @param {boolean} [options.immediate=false]
- *   When true the permission prompt is shown immediately (useful when the user
- *   has already opted-in or you show your own pre-permission UI first).
+ *   When false (default) the permission prompt is deferred until the first
+ *   user interaction (click / scroll / keydown / touchstart).
+ *   When true the prompt is shown immediately.
+ * @param {function(PushSubscription): void} [options.onRenew]
+ *   Optional callback invoked when the browser auto-renews the subscription
+ *   (pushsubscriptionchange). Use this to re-send the new token to AJO.
  * @returns {Promise<{status: string, subscription?: PushSubscription}>}
  */
-export async function initWebPush({ immediate = false } = {}) {
+export async function initWebPush({ immediate = false, onRenew } = {}) {
   if (!isPushSupported()) {
     // eslint-disable-next-line no-console
     console.warn('[WebPush] Push notifications are not supported in this browser.');
     return { status: 'unsupported' };
   }
-
-  // Clean up any stale localStorage records from previous code versions
-  clearLegacyStorage();
 
   let registration;
   try {
@@ -251,18 +168,16 @@ export async function initWebPush({ immediate = false } = {}) {
     return { status: 'sw-failed', error: err };
   }
 
-  // Start listening for subscription renewal messages from the SW
-  listenForSubscriptionChanges();
+  // Wire up subscription-renewal listener
+  listenForSubscriptionChanges(onRenew);
 
-  // Respect previously denied permission — never pester the user again
   if (Notification.permission === 'denied') {
     // eslint-disable-next-line no-console
     console.warn('[WebPush] Notifications are blocked by the user.');
     return { status: 'denied' };
   }
 
-  // If the user hasn't decided yet and we're not in immediate mode,
-  // attach a one-time listener to the first scroll/click instead.
+  // Defer the browser permission prompt until the first user interaction
   if (!immediate && Notification.permission === 'default') {
     // eslint-disable-next-line no-console
     console.log('[WebPush] Deferring permission prompt to first user interaction.');
@@ -270,8 +185,10 @@ export async function initWebPush({ immediate = false } = {}) {
       const triggerEvents = ['click', 'scroll', 'keydown', 'touchstart'];
 
       async function onInteraction() {
-        triggerEvents.forEach((evt) => document.removeEventListener(evt, onInteraction, { once: true }));
-        const result = await initWebPush({ immediate: true });
+        triggerEvents.forEach((evt) =>
+          document.removeEventListener(evt, onInteraction, { once: true }),
+        );
+        const result = await initWebPush({ immediate: true, onRenew });
         resolve(result);
       }
 
@@ -281,7 +198,7 @@ export async function initWebPush({ immediate = false } = {}) {
     });
   }
 
-  // ── Request permission ────────────────────────────────────────────────────
+  // Request permission
   const permission = await requestPermission();
   if (permission !== 'granted') {
     // eslint-disable-next-line no-console
@@ -289,7 +206,7 @@ export async function initWebPush({ immediate = false } = {}) {
     return { status: permission };
   }
 
-  // ── Subscribe ─────────────────────────────────────────────────────────────
+  // Create / retrieve push subscription
   let subscription;
   try {
     subscription = await subscribeToPush(registration);
@@ -299,20 +216,19 @@ export async function initWebPush({ immediate = false } = {}) {
     return { status: 'subscription-failed', error: err };
   }
 
-  // ── Register with AJO on every page load ─────────────────────────────────
-  // alloy deduplicates on the server side; always sending ensures the
-  // identity and subscription token are always in sync with AJO.
-  await registerWithAJO(subscription);
+  // eslint-disable-next-line no-console
+  console.log('[WebPush] Subscription ready. Endpoint:', subscription.endpoint);
 
   return { status: 'granted', subscription };
 }
 
 /**
- * Unsubscribe from push notifications and notify AJO.
- * @returns {Promise<void>}
+ * Unsubscribe from push notifications.
+ * The caller is responsible for notifying AJO via the Web SDK.
+ * @returns {Promise<PushSubscription|null>} the unsubscribed subscription (for AJO cleanup), or null
  */
 export async function unsubscribeWebPush() {
-  if (!isPushSupported()) return;
+  if (!isPushSupported()) return null;
 
   const registration = await navigator.serviceWorker.ready;
   const subscription = await registration.pushManager.getSubscription();
@@ -320,35 +236,16 @@ export async function unsubscribeWebPush() {
   if (!subscription) {
     // eslint-disable-next-line no-console
     console.log('[WebPush] No active subscription to unsubscribe.');
-    return;
+    return null;
   }
 
   await subscription.unsubscribe();
-
-  clearLegacyStorage();
-
-  // Optionally inform AJO that the token is no longer valid
-  if (typeof window.alloy === 'function') {
-    try {
-      await window.alloy('sendEvent', {
-        xdm: {
-          eventType: 'pushNotificationUnsubscribed',
-          pushNotificationDetails: {
-            appID: window.location.hostname,
-            token: subscription.toJSON().keys.p256dh,
-            platform: 'web',
-            denylisted: true,
-          },
-        },
-      });
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('[WebPush] Failed to notify AJO of unsubscription:', err);
-    }
-  }
-
   // eslint-disable-next-line no-console
   console.log('[WebPush] Unsubscribed successfully.');
+
+  // Return the (now-inactive) subscription so the caller can send
+  // a pushNotificationUnsubscribed event to AJO via alloy.
+  return subscription;
 }
 
 /**
