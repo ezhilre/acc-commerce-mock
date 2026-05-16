@@ -2,13 +2,9 @@
  * Service Worker for Web Push Notifications
  * Handles push events and notification click actions.
  *
- * Imports the Adobe Experience Platform Web SDK service-worker helper so that
- * AJO can use this SW for web push delivery.
- * https://cdn1.adoberesources.net/alloy/2.33.1/alloyServiceWorker.js
+ * The Adobe AEP Web SDK registers its own service worker at /alloyServiceWorker.js
+ * (a separate file at root).  This SW handles our custom push/notification logic.
  */
-
-// ─── Adobe Alloy SW helper ────────────────────────────────────────────────────
-importScripts('https://cdn1.adoberesources.net/alloy/2.33.1/alloyServiceWorker.js');
 
 const CACHE_NAME = 'acc-commerce-v1';
 
