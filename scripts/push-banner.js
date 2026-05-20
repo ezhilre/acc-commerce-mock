@@ -356,9 +356,9 @@ async function handleAllow(banner) {
   renderLoading(banner);
 
   try {
-    const { status, subscription } = await initWebPush({ immediate: true });
+    const { status } = await initWebPush({ immediate: true });
 
-    if (status === 'granted' && subscription) {
+    if (status === 'granted') {
       renderSuccess(banner);
       markDismissed();
       setTimeout(() => hideBanner(banner), 3000);
@@ -435,8 +435,7 @@ export function showPushBanner() {
 
   // ── Already granted ────────────────────────────────────────────────────────
   if (permission === 'granted') {
-    // Silently ensure the SW + subscription are up-to-date
-    initWebPush({ immediate: true });
+    // SW is already registered; alloy manages the subscription.
     return;
   }
 
