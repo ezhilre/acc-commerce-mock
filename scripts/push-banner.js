@@ -398,13 +398,29 @@ function renderError(banner, retryFn) {
 // ─── Subscribe handler ────────────────────────────────────────────────────────
 
 async function handleAllow(banner, uid) {
+  // eslint-disable-next-line no-console
+  console.log('[PushBanner] Allow clicked. Current permission:', Notification.permission);
+
+  // If already denied, there is nothing to prompt — just show the blocked state.
+  if (Notification.permission === 'denied') {
+    renderBlocked(banner);
+    banner.querySelector('#acc-push-dismiss')?.addEventListener('click', () => {
+      hideBanner(banner);
+    }, { once: true });
+    return;
+  }
+
+  // Show loading UI AFTER we have confirmed we will call requestPermission,
+  // but keep the actual requestPermission() call as the very first await so
+  // the browser still treats this as a user-gesture-triggered call.
   renderLoading(banner);
 
   try {
-    // Call Notification.requestPermission() directly here — without extra async
-    // indirection — so the browser still recognises this as a user-gesture-triggered
-    // call and shows the native permission dialog instead of silently ignoring it.
+    // eslint-disable-next-line no-console
+    console.log('[PushBanner] Calling Notification.requestPermission()…');
     const permission = await Notification.requestPermission();
+    // eslint-disable-next-line no-console
+    console.log('[PushBanner] Permission result:', permission);
 
     if (permission === 'granted') {
       renderSuccess(banner);
@@ -413,7 +429,7 @@ async function handleAllow(banner, uid) {
     } else if (permission === 'denied') {
       // User denied in the native dialog — switch to the "blocked" informational view
       renderBlocked(banner);
-      banner.querySelector('#acc-push-dismiss').addEventListener('click', () => {
+      banner.querySelector('#acc-push-dismiss')?.addEventListener('click', () => {
         markDismissed(uid);
         hideBanner(banner);
       }, { once: true });
