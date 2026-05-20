@@ -401,13 +401,16 @@ async function handleAllow(banner, uid) {
   renderLoading(banner);
 
   try {
-    const { status } = await initWebPush({ immediate: true });
+    // Call Notification.requestPermission() directly here — without extra async
+    // indirection — so the browser still recognises this as a user-gesture-triggered
+    // call and shows the native permission dialog instead of silently ignoring it.
+    const permission = await Notification.requestPermission();
 
-    if (status === 'granted') {
+    if (permission === 'granted') {
       renderSuccess(banner);
       markDismissed(uid);
       setTimeout(() => hideBanner(banner), 3000);
-    } else if (status === 'denied') {
+    } else if (permission === 'denied') {
       // User denied in the native dialog — switch to the "blocked" informational view
       renderBlocked(banner);
       banner.querySelector('#acc-push-dismiss').addEventListener('click', () => {
