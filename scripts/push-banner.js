@@ -19,8 +19,28 @@
 import { initWebPush } from './webpush.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const DISMISSED_KEY = 'acc_push_banner_dismissed';
 const BANNER_ID = 'acc-push-banner';
+
+// ─── Per-account storage key helpers ─────────────────────────────────────────
+
+/**
+ * Returns the localStorage key scoped to a specific user uid.
+ * @param {string} uid
+ * @returns {string}
+ */
+function getDismissedKey(uid) {
+  return `acc_push_banner_dismissed_${uid}`;
+}
+
+/**
+ * Returns the sessionStorage key scoped to a specific user uid.
+ * Used to show the "blocked" info banner at most once per session per account.
+ * @param {string} uid
+ * @returns {string}
+ */
+function getBlockedSessionKey(uid) {
+  return `acc_push_blocked_shown_${uid}`;
+}
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 const BELL_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
@@ -201,29 +221,35 @@ body.acc-push-banner-open {
 // ─── localStorage helpers ─────────────────────────────────────────────────────
 
 /**
- * Returns true when the user has actively dismissed the banner AND the
+ * Returns true when the given user has actively dismissed the banner AND the
  * current browser permission state is consistent with that choice.
  *
  * Edge-case: if the browser permission was reset to 'default' by the user
  * via browser settings, the stored dismissal is stale — clear it so the
  * banner reappears.
+ * @param {string} uid
+ * @returns {boolean}
  */
-function isDismissed() {
+function isDismissed(uid) {
   try {
+    const key = getDismissedKey(uid);
     if (Notification.permission === 'default') {
-      // Permission was reset externally — treat as a fresh visit
-      localStorage.removeItem(DISMISSED_KEY);
+      // Permission was reset externally — treat as a fresh visit for this account
+      localStorage.removeItem(key);
       return false;
     }
-    return !!localStorage.getItem(DISMISSED_KEY);
+    return !!localStorage.getItem(key);
   } catch {
     return false;
   }
 }
 
-function markDismissed() {
+/**
+ * @param {string} uid
+ */
+function markDismissed(uid) {
   try {
-    localStorage.setItem(DISMISSED_KEY, '1');
+    localStorage.setItem(getDismissedKey(uid), '1');
   } catch { /* ignore */ }
 }
 
@@ -344,15 +370,15 @@ function renderError(banner, retryFn) {
     </span>`;
 
   banner.querySelector('#acc-push-retry').addEventListener('click', retryFn);
+  // uid is captured via retryFn closure — dismiss uses the same uid from handleAllow
   banner.querySelector('#acc-push-dismiss').addEventListener('click', () => {
-    markDismissed();
     hideBanner(banner);
   });
 }
 
 // ─── Subscribe handler ────────────────────────────────────────────────────────
 
-async function handleAllow(banner) {
+async function handleAllow(banner, uid) {
   renderLoading(banner);
 
   try {
@@ -360,35 +386,35 @@ async function handleAllow(banner) {
 
     if (status === 'granted') {
       renderSuccess(banner);
-      markDismissed();
+      markDismissed(uid);
       setTimeout(() => hideBanner(banner), 3000);
     } else if (status === 'denied') {
       // User denied in the native dialog — switch to the "blocked" informational view
       renderBlocked(banner);
       banner.querySelector('#acc-push-dismiss').addEventListener('click', () => {
-        markDismissed();
+        markDismissed(uid);
         hideBanner(banner);
       }, { once: true });
     } else {
       // User dismissed the native dialog without deciding — let them try again
       renderDefault(banner);
-      attachButtonListeners(banner); // eslint-disable-line no-use-before-define
+      attachButtonListeners(banner, uid); // eslint-disable-line no-use-before-define
     }
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[PushBanner] Subscription error:', err);
-    renderError(banner, () => handleAllow(banner));
+    renderError(banner, () => handleAllow(banner, uid));
   }
 }
 
-function attachButtonListeners(banner) {
+function attachButtonListeners(banner, uid) {
   const allowBtn = banner.querySelector('#enable-beta-web-notifications');
   const dismissBtn = banner.querySelector('#acc-push-dismiss');
 
-  if (allowBtn) allowBtn.addEventListener('click', () => handleAllow(banner), { once: true });
+  if (allowBtn) allowBtn.addEventListener('click', () => handleAllow(banner, uid), { once: true });
   if (dismissBtn) {
     dismissBtn.addEventListener('click', () => {
-      markDismissed();
+      markDismissed(uid);
       hideBanner(banner);
     }, { once: true });
   }
@@ -413,15 +439,19 @@ function createBanner() {
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Show the push permission banner.
+ * Show the push permission banner, scoped to the currently logged-in account.
+ *
+ * @param {string} uid  – Firebase UID of the current user.  If falsy the
+ *                        banner is not shown (push is opt-in per account).
  *
  * Handles all three permission states:
  *  • 'default' → "Allow / Not now" banner
  *  • 'denied'  → "Notifications blocked – here's how to re-enable" banner
- *                (only shown once per session; dismissible)
- *  • 'granted' → SW registered silently, no banner shown
+ *                (only shown once per session per account; dismissible)
+ *  • 'granted' → SW registered silently, no banner shown for this account
+ *                unless they haven't been marked as subscribed yet
  */
-export function showPushBanner() {
+export function showPushBanner(uid) {
   // Feature check — Push API not available (e.g. HTTP, old browser)
   if (
     !('Notification' in window) ||
@@ -431,19 +461,32 @@ export function showPushBanner() {
     return;
   }
 
+  // ── No logged-in user → push is per-account; do nothing ───────────────────
+  if (!uid) return;
+
   const { permission } = Notification;
 
-  // ── Already granted ────────────────────────────────────────────────────────
+  // ── Already granted for this account ──────────────────────────────────────
   if (permission === 'granted') {
-    // SW is already registered; alloy manages the subscription.
+    // If this account has already been through the flow, skip silently.
+    if (isDismissed(uid)) return;
+
+    // First time this account sees a granted state (e.g. they granted on another
+    // tab, or permission was granted in a previous session before account-scoped
+    // tracking was introduced).  Show a brief success banner so they know they
+    // are subscribed, then mark as done.
+    const banner = createBanner();
+    renderSuccess(banner);
+    showBanner(banner);
+    markDismissed(uid);
+    setTimeout(() => hideBanner(banner), 3000);
     return;
   }
 
   // ── Blocked by browser ─────────────────────────────────────────────────────
   if (permission === 'denied') {
-    // Show a helpful "how to re-enable" banner (once per session)
-    // Use a session-scoped key so it appears again on every new tab/session
-    const sessionKey = 'acc_push_blocked_shown';
+    // Show a helpful "how to re-enable" banner (once per session per account)
+    const sessionKey = getBlockedSessionKey(uid);
     if (sessionStorage.getItem(sessionKey)) return;
     sessionStorage.setItem(sessionKey, '1');
 
@@ -460,12 +503,12 @@ export function showPushBanner() {
   }
 
   // ── Default (permission = 'default') ──────────────────────────────────────
-  // isDismissed() will auto-clear stale localStorage flags when permission
+  // isDismissed(uid) will auto-clear stale localStorage flags when permission
   // is 'default', so this is always accurate after a browser settings reset.
-  if (isDismissed()) return;
+  if (isDismissed(uid)) return;
 
   const banner = createBanner();
   renderDefault(banner);
-  attachButtonListeners(banner);
+  attachButtonListeners(banner, uid);
   showBanner(banner);
 }
