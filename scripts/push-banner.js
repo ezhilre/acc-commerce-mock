@@ -336,8 +336,12 @@ function renderBlocked(banner) {
   // even after a previous denial when triggered by a direct user click).
   // If the browser ignores it, the instructions above guide the user manually.
   banner.querySelector('#enable-beta-web-notifications').addEventListener('click', async () => {
+    // eslint-disable-next-line no-console
+    console.log('[PushBanner] renderBlocked Allow button clicked. permission:', Notification.permission);
     try {
       const result = await Notification.requestPermission();
+      // eslint-disable-next-line no-console
+      console.log('[PushBanner] renderBlocked requestPermission result:', result);
       if (result === 'granted') {
         // Permission was re-granted — show success and remove the banner
         renderSuccess(banner);
@@ -449,7 +453,19 @@ function attachButtonListeners(banner, uid) {
   const allowBtn = banner.querySelector('#enable-beta-web-notifications');
   const dismissBtn = banner.querySelector('#acc-push-dismiss');
 
-  if (allowBtn) allowBtn.addEventListener('click', () => handleAllow(banner, uid), { once: true });
+  // eslint-disable-next-line no-console
+  console.log('[PushBanner] attachButtonListeners — allowBtn found:', !!allowBtn, '| dismissBtn found:', !!dismissBtn);
+  // eslint-disable-next-line no-console
+  console.log('[PushBanner] banner innerHTML preview:', banner.innerHTML.slice(0, 200));
+
+  if (allowBtn) {
+    // eslint-disable-next-line no-console
+    allowBtn.onclick = (e) => { console.log('[PushBanner] allowBtn onclick fired', e); handleAllow(banner, uid); };
+    allowBtn.addEventListener('click', (e) => {
+      // eslint-disable-next-line no-console
+      console.log('[PushBanner] allowBtn addEventListener fired', e);
+    });
+  }
   if (dismissBtn) {
     dismissBtn.addEventListener('click', () => {
       markDismissed(uid);
@@ -490,19 +506,30 @@ function createBanner() {
  *                unless they haven't been marked as subscribed yet
  */
 export function showPushBanner(uid) {
+  // eslint-disable-next-line no-console
+  console.log('[PushBanner] showPushBanner called. uid:', uid, '| Notification.permission:', typeof Notification !== 'undefined' ? Notification.permission : 'N/A');
+
   // Feature check — Push API not available (e.g. HTTP, old browser)
   if (
     !('Notification' in window) ||
     !('serviceWorker' in navigator) ||
     !('PushManager' in window)
   ) {
+    // eslint-disable-next-line no-console
+    console.log('[PushBanner] Feature check failed. Notification:', 'Notification' in window, '| SW:', 'serviceWorker' in navigator, '| PushManager:', 'PushManager' in window);
     return;
   }
 
   // ── No logged-in user → push is per-account; do nothing ───────────────────
-  if (!uid) return;
+  if (!uid) {
+    // eslint-disable-next-line no-console
+    console.log('[PushBanner] No uid — banner not shown.');
+    return;
+  }
 
   const { permission } = Notification;
+  // eslint-disable-next-line no-console
+  console.log('[PushBanner] Permission state:', permission);
 
   // ── Already granted ────────────────────────────────────────────────────────
   // Permission is already granted — nothing to ask, skip silently.
@@ -528,6 +555,8 @@ export function showPushBanner(uid) {
 
   const banner = createBanner();
   renderDefault(banner);
+  // eslint-disable-next-line no-console
+  console.log('[PushBanner] Banner created, calling attachButtonListeners. uid:', uid);
   attachButtonListeners(banner, uid);
   showBanner(banner);
 }
