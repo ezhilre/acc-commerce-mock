@@ -2,16 +2,11 @@
  * Web Push Notification module
  *
  * Responsibilities:
- *  1. Register /sw.js as the service worker
- *  2. Request Notification permission from the user
+ *  1. Request Notification permission from the user
  *
- * Push subscription and delivery are handled by the AJO Web SDK
- * (alloy) via alloyServiceWorker.js — this module only gates
- * browser permission and registers the service worker.
+ * Push subscription, service worker registration, and delivery are handled
+ * by the AJO Web SDK (alloy) via alloyServiceWorker.js.
  */
-
-// ─── Service-worker path (must be at root so its scope covers the whole site) ──
-const SW_PATH = '/sw.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -24,31 +19,6 @@ function isPushSupported() {
     'serviceWorker' in navigator &&
     'Notification' in window
   );
-}
-
-// ─── Service Worker Registration ──────────────────────────────────────────────
-
-/**
- * Register (or retrieve an existing) service worker registration.
- * @returns {Promise<ServiceWorkerRegistration>}
- */
-async function registerServiceWorker() {
-  const registration = await navigator.serviceWorker.register(SW_PATH, {
-    scope: '/',
-  });
-  // Wait until the SW is active (handles the first-install case)
-  if (registration.installing || registration.waiting) {
-    await new Promise((resolve) => {
-      const sw = registration.installing || registration.waiting;
-      sw.addEventListener('statechange', function onStateChange() {
-        if (sw.state === 'activated') {
-          sw.removeEventListener('statechange', onStateChange);
-          resolve();
-        }
-      });
-    });
-  }
-  return registration;
 }
 
 // ─── Permission ───────────────────────────────────────────────────────────────
@@ -68,8 +38,9 @@ async function requestPermission() {
 
 /**
  * Initialise web push:
- *  - Registers the service worker
  *  - Requests Notification permission from the user
+ *
+ * Service worker registration is handled by the AJO Web SDK (alloy).
  *
  * @param {object} [options]
  * @param {boolean} [options.immediate=false]
@@ -81,12 +52,6 @@ async function requestPermission() {
 export async function initWebPush({ immediate = false } = {}) {
   if (!isPushSupported()) {
     return { status: 'unsupported' };
-  }
-
-  try {
-    await registerServiceWorker();
-  } catch (err) {
-    return { status: 'sw-failed', error: err };
   }
 
   if (Notification.permission === 'denied') {
