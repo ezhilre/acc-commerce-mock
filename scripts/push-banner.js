@@ -496,11 +496,6 @@ export function showPushBanner(uid) {
 
   // ── Blocked by browser ─────────────────────────────────────────────────────
   if (permission === 'denied') {
-    // Show a helpful "how to re-enable" banner (once per session per account)
-    const sessionKey = getBlockedSessionKey(uid);
-    if (sessionStorage.getItem(sessionKey)) return;
-    sessionStorage.setItem(sessionKey, '1');
-
     const banner = createBanner();
     renderBlocked(banner);
 
@@ -514,9 +509,6 @@ export function showPushBanner(uid) {
   }
 
   // ── Default (permission = 'default') ──────────────────────────────────────
-  // isDismissed(uid) will auto-clear stale localStorage flags when permission
-  // is 'default', so this is always accurate after a browser settings reset.
-  if (isDismissed(uid)) return;
 
   const banner = createBanner();
   renderDefault(banner);
