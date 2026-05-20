@@ -466,22 +466,11 @@ export function showPushBanner(uid) {
 
   const { permission } = Notification;
 
-  // ── Already granted for this account ──────────────────────────────────────
-  if (permission === 'granted') {
-    // If this account has already been through the flow, skip silently.
-    if (isDismissed(uid)) return;
-
-    // First time this account sees a granted state (e.g. they granted on another
-    // tab, or permission was granted in a previous session before account-scoped
-    // tracking was introduced).  Show a brief success banner so they know they
-    // are subscribed, then mark as done.
-    const banner = createBanner();
-    renderSuccess(banner);
-    showBanner(banner);
-    markDismissed(uid);
-    setTimeout(() => hideBanner(banner), 3000);
-    return;
-  }
+  // ── Already granted ────────────────────────────────────────────────────────
+  // Permission is already granted — nothing to ask, skip silently.
+  // The success banner is shown immediately after the user clicks "Allow",
+  // so there is no need to display anything on subsequent page loads.
+  if (permission === 'granted') return;
 
   // ── Blocked by browser ─────────────────────────────────────────────────────
   if (permission === 'denied') {
