@@ -324,10 +324,29 @@ function renderBlocked(banner) {
       <small>${instruction}</small>
     </span>
     <span class="acc-push-banner__actions">
+      <button class="acc-push-banner__btn acc-push-banner__btn--allow" id="acc-push-unblock">
+        ${BELL_ICON} Allow notifications
+      </button>
       <button class="acc-push-banner__btn acc-push-banner__btn--dismiss" id="acc-push-dismiss">
         Dismiss
       </button>
     </span>`;
+
+  // Attempt to re-trigger the permission prompt (works on some browsers/OS
+  // even after a previous denial when triggered by a direct user click).
+  // If the browser ignores it, the instructions above guide the user manually.
+  banner.querySelector('#acc-push-unblock').addEventListener('click', async () => {
+    try {
+      const result = await Notification.requestPermission();
+      if (result === 'granted') {
+        // Permission was re-granted — show success and remove the banner
+        renderSuccess(banner);
+        setTimeout(() => hideBanner(banner), 3000);
+      }
+      // If still denied or default, leave the banner as-is so the user can
+      // follow the manual instructions.
+    } catch { /* ignore */ }
+  }, { once: true });
 }
 
 function renderLoading(banner) {
