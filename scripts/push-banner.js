@@ -324,7 +324,7 @@ function renderBlocked(banner) {
       <small>${instruction}</small>
     </span>
     <span class="acc-push-banner__actions">
-      <button class="acc-push-banner__btn acc-push-banner__btn--allow" id="acc-push-unblock">
+      <button class="acc-push-banner__btn acc-push-banner__btn--allow" id="enable-beta-web-notifications">
         ${BELL_ICON} Allow notifications
       </button>
       <button class="acc-push-banner__btn acc-push-banner__btn--dismiss" id="acc-push-dismiss">
@@ -335,7 +335,7 @@ function renderBlocked(banner) {
   // Attempt to re-trigger the permission prompt (works on some browsers/OS
   // even after a previous denial when triggered by a direct user click).
   // If the browser ignores it, the instructions above guide the user manually.
-  banner.querySelector('#acc-push-unblock').addEventListener('click', async () => {
+  banner.querySelector('#enable-beta-web-notifications').addEventListener('click', async () => {
     try {
       const result = await Notification.requestPermission();
       if (result === 'granted') {
