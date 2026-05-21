@@ -374,6 +374,25 @@ function renderSuccess(banner) {
     </span>`;
 }
 
+function renderGranted(banner) {
+  banner.classList.remove('acc-push-banner--error', 'acc-push-banner--blocked');
+  banner.classList.add('acc-push-banner--success');
+  banner.innerHTML = `
+    <span class="acc-push-banner__icon">${CHECK_ICON}</span>
+    <span class="acc-push-banner__text">
+      <strong>Notifications enabled</strong>
+      You're already receiving browser notifications from us.
+    </span>
+    <span class="acc-push-banner__actions">
+      <button class="acc-push-banner__btn acc-push-banner__btn--allow" disabled>
+        ${CHECK_ICON} Notifications enabled
+      </button>
+      <button class="acc-push-banner__btn acc-push-banner__btn--dismiss" id="acc-push-dismiss">
+        Dismiss
+      </button>
+    </span>`;
+}
+
 function renderError(banner, retryFn) {
   banner.classList.remove('acc-push-banner--success', 'acc-push-banner--blocked');
   banner.classList.add('acc-push-banner--error');
@@ -532,10 +551,18 @@ export function showPushBanner(uid) {
   console.log('[PushBanner] Permission state:', permission);
 
   // ── Already granted ────────────────────────────────────────────────────────
-  // Permission is already granted — nothing to ask, skip silently.
-  // The success banner is shown immediately after the user clicks "Allow",
-  // so there is no need to display anything on subsequent page loads.
-  if (permission === 'granted') return;
+  // Show a non-interactive banner indicating notifications are already enabled.
+  // The button is disabled so the user cannot click it again.
+  if (permission === 'granted') {
+    const banner = createBanner();
+    renderGranted(banner);
+    const dismissBtn = banner.querySelector('#acc-push-dismiss');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', () => hideBanner(banner), { once: true });
+    }
+    showBanner(banner);
+    return;
+  }
 
   // ── Blocked by browser ─────────────────────────────────────────────────────
   if (permission === 'denied') {
