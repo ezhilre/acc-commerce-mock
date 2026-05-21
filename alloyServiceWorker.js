@@ -28,6 +28,8 @@ governing permissions and limitations under the License.
 /** @import {  PushNotificationData  } from '../types.js' */
 /** @import { ServiceWorkerLogger } from '../types.js' */
 
+const DEBUG_PREFIX = "AlloyServiceWorkerDebug: ";
+
 /**
  * @async
  * @function
@@ -39,27 +41,37 @@ governing permissions and limitations under the License.
  * @returns {Promise<void>}
  */
 var serviceWorkerPushListener = async ({ sw, event, logger }) => {
+  console.log(DEBUG_PREFIX, "[push] Push event received", event);
+
   if (!event.data) {
+    console.warn(DEBUG_PREFIX, "[push] No event.data present, ignoring push event.");
     return;
   }
+
+  console.log(DEBUG_PREFIX, "[push] Raw push data text:", event.data.text());
 
   /** @type {PushNotificationData} */
   let notificationData;
   try {
     notificationData = event.data.json();
+    console.log(DEBUG_PREFIX, "[push] Parsed JSON notification data:", JSON.stringify(notificationData, null, 2));
   } catch (error) {
     // Fallback: treat push data as plain text and show a basic notification
     const text = event.data.text();
     if (text) {
-      logger.info("Push data is not JSON, falling back to plain text notification.");
+      console.log(DEBUG_PREFIX, "[push] Push data is not JSON, falling back to plain text notification. Text:", text);
       return sw.registration.showNotification(text, {});
     }
+    console.error(DEBUG_PREFIX, "[push] Error decoding notification JSON data and no text fallback:", error);
     logger.error("Error decoding notification JSON data:", error);
     return;
   }
 
   const webData = notificationData.web;
+  console.log(DEBUG_PREFIX, "[push] notificationData.web:", JSON.stringify(webData, null, 2));
+
   if (!webData?.title) {
+    console.warn(DEBUG_PREFIX, "[push] webData.title is missing, notification will not be shown. webData:", webData);
     return;
   }
 
@@ -71,6 +83,8 @@ var serviceWorkerPushListener = async ({ sw, event, logger }) => {
     actions: [],
   };
 
+  console.log(DEBUG_PREFIX, "[push] Notification options before cleanup:", JSON.stringify(notificationOptions, null, 2));
+
   Object.keys(notificationOptions).forEach((k) => {
     if (notificationOptions[k] == null) {
       delete notificationOptions[k];
@@ -78,6 +92,7 @@ var serviceWorkerPushListener = async ({ sw, event, logger }) => {
   });
 
   if (webData.actions && webData.actions.buttons) {
+    console.log(DEBUG_PREFIX, "[push] Action buttons found:", JSON.stringify(webData.actions.buttons, null, 2));
     notificationOptions.actions = webData.actions.buttons.map(
       (button, index) => ({
         action: `action_${index}`,
@@ -86,6 +101,7 @@ var serviceWorkerPushListener = async ({ sw, event, logger }) => {
     );
   }
 
+  console.log(DEBUG_PREFIX, "[push] Calling showNotification with title:", webData.title, "options:", JSON.stringify(notificationOptions, null, 2));
   return sw.registration.showNotification(webData.title, notificationOptions);
 };
 
@@ -126,17 +142,22 @@ var createServiceWorkerNotificationClickListener = ({ makeSendServiceWorkerTrack
    * @param {NotificationEvent} options.event
    */
   return ({ event }) => {
+    console.log(DEBUG_PREFIX, "[notificationclick] Notification click event received", event);
     event.notification.close();
 
     const data = event.notification.data;
+    console.log(DEBUG_PREFIX, "[notificationclick] Notification data:", JSON.stringify(data, null, 2));
+
     let targetUrl = null;
     let actionLabel = null;
 
     if (event.action) {
+      console.log(DEBUG_PREFIX, "[notificationclick] Action clicked:", event.action);
       const actionIndex = parseInt(event.action.replace("action_", ""), 10);
       if (data?.actions?.buttons[actionIndex]) {
         const button = data.actions.buttons[actionIndex];
         actionLabel = button.label;
+        console.log(DEBUG_PREFIX, "[notificationclick] Button action - label:", actionLabel, "type:", button.type, "uri:", button.uri);
         if (canHandleUrl(button.type) && button.uri) {
           targetUrl = button.uri;
         }
@@ -146,26 +167,36 @@ var createServiceWorkerNotificationClickListener = ({ makeSendServiceWorkerTrack
       data?.interaction?.uri
     ) {
       targetUrl = data.interaction.uri;
+      console.log(DEBUG_PREFIX, "[notificationclick] Default interaction - type:", data.interaction.type, "uri:", targetUrl);
     }
+
+    console.log(DEBUG_PREFIX, "[notificationclick] Resolved targetUrl:", targetUrl, "actionLabel:", actionLabel);
 
     makeSendServiceWorkerTrackingData({
       // eslint-disable-next-line no-underscore-dangle
       xdm: data._xdm.mixins,
       actionLabel,
       applicationLaunches: 1,
+    }).then((success) => {
+      console.log(DEBUG_PREFIX, "[notificationclick] Tracking call result:", success);
     }).catch((error) => {
+      console.error(DEBUG_PREFIX, "[notificationclick] Failed to send tracking call:", error);
       logger.error("Failed to send tracking call:", error);
     });
 
     if (targetUrl) {
+      console.log(DEBUG_PREFIX, "[notificationclick] Opening/focusing window for URL:", targetUrl);
       event.waitUntil(
         sw.clients.matchAll({ type: "window" }).then((clientList) => {
+          console.log(DEBUG_PREFIX, "[notificationclick] Open clients:", clientList.length);
           for (const client of clientList) {
             if (client.url === targetUrl && "focus" in client) {
+              console.log(DEBUG_PREFIX, "[notificationclick] Focusing existing client for URL:", targetUrl);
               return client.focus();
             }
           }
           if (sw.clients.openWindow) {
+            console.log(DEBUG_PREFIX, "[notificationclick] Opening new window for URL:", targetUrl);
             return sw.clients.openWindow(targetUrl);
           }
         }),
@@ -263,11 +294,13 @@ governing permissions and limitations under the License.
  * @throws {Error}
  */
 var readFromIndexedDb = async (logger) => {
+  console.log(DEBUG_PREFIX, "[indexedDB] Reading config from IndexedDB. DB:", DB_NAME, "Store:", STORE_NAME, "Key:", INDEX_KEY);
   try {
     const db = await openIndexedDb(
       DB_NAME,
       DB_VERSION,
       (/** @type {IDBDatabase} */ db) => {
+        console.log(DEBUG_PREFIX, "[indexedDB] Upgrading DB schema - creating object store:", STORE_NAME);
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME, { keyPath: "id" });
         }
@@ -282,8 +315,10 @@ var readFromIndexedDb = async (logger) => {
 
     db.close();
 
+    console.log(DEBUG_PREFIX, "[indexedDB] Config data read from IndexedDB:", JSON.stringify(existingConfigData, null, 2));
     return existingConfigData;
   } catch (error) {
+    console.error(DEBUG_PREFIX, "[indexedDB] Failed to read data from IndexedDB:", error);
     logger.error("Failed to read data from IndexedDB", { error });
   }
 };
@@ -329,9 +364,14 @@ const createMakeSendServiceWorkerTrackingData = ({
    * @throws {Error}
    */
   return async ({ xdm, actionLabel, applicationLaunches = 0 }) => {
+    console.log(DEBUG_PREFIX, "[tracking] sendTrackingData called. actionLabel:", actionLabel, "applicationLaunches:", applicationLaunches);
+
     const configData = await readFromIndexedDb(logger);
     const { browser, ecid, edgeDomain, edgeBasePath, datastreamId, datasetId } =
       configData || {};
+
+    console.log(DEBUG_PREFIX, "[tracking] Config fields - browser:", browser, "ecid:", ecid, "edgeDomain:", edgeDomain, "edgeBasePath:", edgeBasePath, "datastreamId:", datastreamId, "datasetId:", datasetId);
+
     let customActionData = {};
 
     if (actionLabel) {
@@ -364,6 +404,7 @@ const createMakeSendServiceWorkerTrackingData = ({
     try {
       for (const field of requiredFields) {
         if (!configData[field.name]) {
+          console.error(DEBUG_PREFIX, "[tracking] Missing required field:", field.errorField, "- configData:", JSON.stringify(configData, null, 2));
           throw new Error(
             `Cannot send tracking call. ${field.errorField} is missing.`,
           );
@@ -371,6 +412,7 @@ const createMakeSendServiceWorkerTrackingData = ({
       }
 
       const url = `https://${edgeDomain}/${edgeBasePath}/v1/interact?configId=${datastreamId}&requestId=${uuidv4()}`;
+      console.log(DEBUG_PREFIX, "[tracking] Sending tracking request to URL:", url);
 
       /** @type {TrackingDataPayload} */
       const payload = {
@@ -418,6 +460,8 @@ const createMakeSendServiceWorkerTrackingData = ({
         ],
       };
 
+      console.log(DEBUG_PREFIX, "[tracking] Tracking payload:", JSON.stringify(payload, null, 2));
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -426,7 +470,10 @@ const createMakeSendServiceWorkerTrackingData = ({
         body: JSON.stringify(payload),
       });
 
+      console.log(DEBUG_PREFIX, "[tracking] Tracking response status:", response.status, response.statusText);
+
       if (!response.ok) {
+        console.error(DEBUG_PREFIX, "[tracking] Tracking call failed:", response.status, response.statusText);
         logger.error(
           "Tracking call failed: ",
           response.status,
@@ -435,8 +482,10 @@ const createMakeSendServiceWorkerTrackingData = ({
         return false;
       }
 
+      console.log(DEBUG_PREFIX, "[tracking] Tracking call succeeded.");
       return true;
     } catch (error) {
+      console.error(DEBUG_PREFIX, "[tracking] Error sending tracking call:", error);
       logger.error("Error sending tracking call:", error);
       return false;
     }
@@ -563,6 +612,7 @@ const createEventListeners = ({ platform, sw }) => {
        */
       async onNotificationClose(event) {
         const data = event.notification.data;
+        console.log(DEBUG_PREFIX, "[notificationclose] Notification closed. data:", JSON.stringify(data, null, 2));
 
         try {
           await makeSendServiceWorkerTrackingData({
@@ -571,6 +621,7 @@ const createEventListeners = ({ platform, sw }) => {
             actionLabel: "Dismiss",
           });
         } catch (error) {
+          console.error(DEBUG_PREFIX, "[notificationclose] Failed to send tracking call:", error);
           platform.logger.error("Failed to send tracking call:", error);
         }
       },
@@ -623,6 +674,7 @@ const eventListeners = createEventListeners({
  * @listens install
  */
 sw.addEventListener("install", () => {
+  console.log(DEBUG_PREFIX, "[lifecycle] Service worker installing. Calling skipWaiting().");
   sw.skipWaiting();
 });
 
@@ -631,6 +683,7 @@ sw.addEventListener("install", () => {
  * @param {ExtendableEvent} event
  */
 sw.addEventListener("activate", (event) => {
+  console.log(DEBUG_PREFIX, "[lifecycle] Service worker activating. Calling clients.claim().");
   event.waitUntil(sw.clients.claim());
 });
 
@@ -639,22 +692,25 @@ sw.addEventListener("activate", (event) => {
  * @param {PushEvent} event
  * @returns {Promise<void>}
  */
-sw.addEventListener("push", (event) =>
-  eventListeners.pushNotifications.onPush(event),
-);
+sw.addEventListener("push", (event) => {
+  console.log(DEBUG_PREFIX, "[lifecycle] Push event fired. Passing to onPush handler.");
+  return eventListeners.pushNotifications.onPush(event);
+});
 
 /**
  * @listens notificationclick
  * @param {NotificationEvent} event
  */
-sw.addEventListener("notificationclick", (event) =>
-  eventListeners.pushNotifications.onNotificationClick(event),
-);
+sw.addEventListener("notificationclick", (event) => {
+  console.log(DEBUG_PREFIX, "[lifecycle] notificationclick event fired.");
+  return eventListeners.pushNotifications.onNotificationClick(event);
+});
 
 /**
  * @listens notificationclose
  * @param {NotificationEvent} event
  */
 sw.addEventListener("notificationclose", (event) => {
+  console.log(DEBUG_PREFIX, "[lifecycle] notificationclose event fired.");
   eventListeners.pushNotifications.onNotificationClose(event);
 });
