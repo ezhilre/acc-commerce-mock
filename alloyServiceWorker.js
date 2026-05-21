@@ -48,12 +48,13 @@ var serviceWorkerPushListener = async ({ sw, event, logger }) => {
   try {
     notificationData = event.data.json();
   } catch (error) {
-    logger.error("Error decoding notification JSON data:", error);
     // Fallback: treat push data as plain text and show a basic notification
     const text = event.data.text();
     if (text) {
+      logger.info("Push data is not JSON, falling back to plain text notification.");
       return sw.registration.showNotification(text, {});
     }
+    logger.error("Error decoding notification JSON data:", error);
     return;
   }
 
