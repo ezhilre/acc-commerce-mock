@@ -374,7 +374,7 @@ function renderSuccess(banner) {
     </span>`;
 }
 
-function renderGranted(banner) {
+function renderGranted(banner, uid) {
   banner.classList.remove('acc-push-banner--error', 'acc-push-banner--blocked');
   banner.classList.add('acc-push-banner--success');
   banner.innerHTML = `
@@ -384,13 +384,28 @@ function renderGranted(banner) {
       You're already receiving browser notifications from us.
     </span>
     <span class="acc-push-banner__actions">
-      <button class="acc-push-banner__btn acc-push-banner__btn--allow" disabled>
+      <button class="acc-push-banner__btn acc-push-banner__btn--allow" id="enable-beta-web-notifications">
         ${CHECK_ICON} Notifications enabled
       </button>
       <button class="acc-push-banner__btn acc-push-banner__btn--dismiss" id="acc-push-dismiss">
         Dismiss
       </button>
     </span>`;
+
+  banner.querySelector('#enable-beta-web-notifications').addEventListener('click', async () => {
+    // eslint-disable-next-line no-console
+    console.log('[PushBanner] renderGranted — re-subscribing for uid:', uid);
+    renderLoading(banner);
+    try {
+      await initWebPush(uid);
+      renderSuccess(banner);
+      setTimeout(() => hideBanner(banner), 3000);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[PushBanner] renderGranted re-subscribe error:', err);
+      renderError(banner, () => renderGranted(banner, uid));
+    }
+  }, { once: true });
 }
 
 function renderError(banner, retryFn) {
@@ -555,7 +570,7 @@ export function showPushBanner(uid) {
   // The button is disabled so the user cannot click it again.
   if (permission === 'granted') {
     const banner = createBanner();
-    renderGranted(banner);
+    renderGranted(banner, uid);
     const dismissBtn = banner.querySelector('#acc-push-dismiss');
     if (dismissBtn) {
       dismissBtn.addEventListener('click', () => hideBanner(banner), { once: true });
