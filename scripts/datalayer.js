@@ -931,6 +931,7 @@ function pushPageView() {
 // event may have already fired by the time this code runs. Guard against
 // that by checking document.readyState and calling pushPageView immediately
 // when the page is already fully loaded.
+//
 if (document.readyState === 'complete') {
   pushPageView();
 } else {
