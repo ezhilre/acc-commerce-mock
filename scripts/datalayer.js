@@ -925,15 +925,20 @@ function pushPageView() {
   console.groupEnd();
 }
 
-// Fire pageView after the page is fully loaded so the document title and
-// any deferred user-hydration (cookie / authStateChanged) have completed.
-// Because datalayer.js is loaded via a dynamic import(), the window 'load'
-// event may have already fired by the time this code runs. Guard against
-// that by checking document.readyState and calling pushPageView immediately
-// when the page is already fully loaded.
+// datalayer.js is loaded via a dynamic import() from scripts.js, which is a
+// type="module" script. Module scripts are deferred – they run after the DOM is
+// fully parsed, so document.readyState is always 'interactive' or 'complete'
+// by the time this code executes. Relying on the 'load' event alone is
+// unreliable because on fast/cached pages the load event fires before the
+// dynamic import resolves, causing the listener to be registered too late.
 //
-if (document.readyState === 'complete') {
-  pushPageView();
+// Use DOMContentLoaded as the baseline trigger:
+//   • 'loading'    – DOM not yet parsed (practically impossible for a module)
+//   • 'interactive'– DOM parsed, resources still loading → fire immediately
+//   • 'complete'   – everything loaded → fire immediately
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', pushPageView, { once: true });
 } else {
-  window.addEventListener('load', pushPageView, { once: true });
+  // readyState is 'interactive' or 'complete' – DOM is ready, fire now
+  pushPageView();
 }
