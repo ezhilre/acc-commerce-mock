@@ -156,7 +156,8 @@ async function publishCartEventToKafka(cartItem, betacartId, cartItems) {
     },
     cart: {
       betacartId,
-      totalItems: cartItems.length,
+      //totalItems: cartItems.length,
+      totalItems: String(cartItems.length),
       totalQuantity: cartItems.reduce((sum, i) => sum + (i.quantity || 1), 0),
       currency: 'INR',
       citems: cartItems.map((i) => ({
@@ -567,7 +568,8 @@ function pushAddToCart(item) {
     product: { ...cartItem },
     cart: {
       betacartId: _cartId,
-      totalItems: window.digitalData.cart.citems.length,
+      //totalItems: window.digitalData.cart.citems.length,
+      totalItems: String(window.digitalData.cart.citems.length),
       citems: [...window.digitalData.cart.citems],
     },
     user: { ...window.digitalData.user },
@@ -609,7 +611,8 @@ function clearCart() {
     clearedItems,
     cart: {
       clearedCartId,
-      totalItems: 0,
+      //totalItems: 0
+      totalItems: '0',
       citems: [],
     },
     user: { ...window.digitalData.user },
