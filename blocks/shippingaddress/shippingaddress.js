@@ -13,9 +13,14 @@ export default function decorate(block) {
     <div class="shipping-address-fields" style="display:none;">
       <form class="shipping-address-form" id="shipping-address-form" novalidate>
         <div class="form-row">
-          <label for="shipping-street" class="form-label">Street <span class="required">*</span></label>
-          <input type="text" id="shipping-street" name="street" class="form-input" placeholder="123 Main Street" autocomplete="shipping street-address">
-          <span class="field-error" id="shipping-street-error"></span>
+          <label for="shipping-street1" class="form-label">Street 1 <span class="required">*</span></label>
+          <input type="text" id="shipping-street1" name="street1" class="form-input" placeholder="123 Main Street" autocomplete="shipping address-line1">
+          <span class="field-error" id="shipping-street1-error"></span>
+        </div>
+        <div class="form-row">
+          <label for="shipping-street2" class="form-label">Street 2</label>
+          <input type="text" id="shipping-street2" name="street2" class="form-input" placeholder="Apt, Suite, Unit (optional)" autocomplete="shipping address-line2">
+          <span class="field-error" id="shipping-street2-error"></span>
         </div>
         <div class="form-row two-col">
           <div class="form-group">
@@ -69,7 +74,7 @@ export default function decorate(block) {
     } else {
       fieldsSection.style.display = 'block';
       summary.style.display = 'none';
-      const requiredIds = ['shipping-street', 'shipping-city', 'shipping-state', 'shipping-zip', 'shipping-country'];
+      const requiredIds = ['shipping-street1', 'shipping-city', 'shipping-state', 'shipping-zip', 'shipping-country'];
       requiredIds.forEach((id) => {
         const el = block.querySelector(`#${id}`);
         if (el) el.setAttribute('required', '');
@@ -102,7 +107,8 @@ export default function decorate(block) {
   block.getAddress = function getAddress() {
     if (checkbox.checked) return null;
     return {
-      street: block.querySelector('#shipping-street').value,
+      street1: block.querySelector('#shipping-street1').value,
+      street2: block.querySelector('#shipping-street2').value,
       city: block.querySelector('#shipping-city').value,
       state: block.querySelector('#shipping-state').value,
       zip: block.querySelector('#shipping-zip').value,

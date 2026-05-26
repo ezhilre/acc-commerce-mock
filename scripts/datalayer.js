@@ -259,7 +259,7 @@ async function publishOrderEventToKafka(orderConfirmation) {
       orderId: orderConfirmation.orderId || '',
       ...(orderConfirmation.betacartId ? { betacartId: orderConfirmation.betacartId } : {}),
       date: orderConfirmation.date || new Date().toISOString(),
-      total: parseFloat(orderConfirmation.total) || 0,
+      total: String(parseFloat(orderConfirmation.total) || 0),
       currency: orderConfirmation.currency || 'INR',
       itemCount: orderConfirmation.itemCount || 0,
       totalQuantity: (orderConfirmation.citems || []).reduce((sum, i) => sum + (i.quantity || 1), 0),
@@ -636,8 +636,8 @@ function clearCart() {
  * @param {Array}   [orderData.citems]           – ordered items array
  * @param {string}  [orderData.total]           – order total string
  * @param {string}  [orderData.currency]        – currency code (default: INR)
- * @param {object}  [orderData.billingAddress]  – billing address object
- * @param {object}  [orderData.shippingAddress] – shipping address object
+ * @param {object}  [orderData.billingAddress]  – billing address object { street1, street2, city, state, zip, country }
+ * @param {object}  [orderData.shippingAddress] – shipping address object { street1, street2, city, state, zip, country }
  * @param {object}  [orderData.paymentData]     – payment method summary
  */
 function pushOrderConfirmation(orderData) {
@@ -649,7 +649,7 @@ function pushOrderConfirmation(orderData) {
     orderId: orderData.orderId || '',
     ...(resolvedCartId ? { betacartId: resolvedCartId } : {}),
     date: orderData.date || new Date().toISOString(),
-    total: parseFloat(orderData.total) || 0,
+    total: String(parseFloat(orderData.total) || 0),
     currency: orderData.currency || 'INR',
     itemCount: (orderData.citems || []).length,
       citems: (orderData.citems || []).map((i) => ({

@@ -8,9 +8,14 @@ export default function decorate(block) {
     </div>
     <form class="billing-address-form" id="billing-address-form" novalidate>
       <div class="form-row">
-        <label for="billing-street" class="form-label">Street <span class="required">*</span></label>
-        <input type="text" id="billing-street" name="street" class="form-input" placeholder="123 Main Street" required autocomplete="street-address">
-        <span class="field-error" id="billing-street-error"></span>
+        <label for="billing-street1" class="form-label">Street 1 <span class="required">*</span></label>
+        <input type="text" id="billing-street1" name="street1" class="form-input" placeholder="123 Main Street" required autocomplete="address-line1">
+        <span class="field-error" id="billing-street1-error"></span>
+      </div>
+      <div class="form-row">
+        <label for="billing-street2" class="form-label">Street 2</label>
+        <input type="text" id="billing-street2" name="street2" class="form-input" placeholder="Apt, Suite, Unit (optional)" autocomplete="address-line2">
+        <span class="field-error" id="billing-street2-error"></span>
       </div>
       <div class="form-row two-col">
         <div class="form-group">
@@ -67,7 +72,8 @@ export default function decorate(block) {
   // Expose getter for address data
   block.getAddress = function getAddress() {
     return {
-      street: block.querySelector('#billing-street').value,
+      street1: block.querySelector('#billing-street1').value,
+      street2: block.querySelector('#billing-street2').value,
       city: block.querySelector('#billing-city').value,
       state: block.querySelector('#billing-state').value,
       zip: block.querySelector('#billing-zip').value,

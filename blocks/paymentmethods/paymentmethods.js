@@ -188,7 +188,7 @@ export default function decorate(block) {
       billingValid = billingBlock.validateForm();
     } else {
       // Fallback: manual billing validation
-      const fields = ['billing-street', 'billing-city', 'billing-state', 'billing-zip', 'billing-country'];
+      const fields = ['billing-street1', 'billing-city', 'billing-state', 'billing-zip', 'billing-country'];
       fields.forEach((id) => {
         const el = document.getElementById(id);
         const err = document.getElementById(`${id}-error`);
@@ -225,7 +225,8 @@ export default function decorate(block) {
 
     // ── Collect order data ──
     let billingAddress = {
-      street: '',
+      street1: '',
+      street2: '',
       city: '',
       state: '',
       zip: '',
@@ -236,7 +237,8 @@ export default function decorate(block) {
       billingAddress = billingBlock.getAddress();
     } else {
       billingAddress = {
-        street: (document.getElementById('billing-street') || {}).value || '',
+        street1: (document.getElementById('billing-street1') || {}).value || '',
+        street2: (document.getElementById('billing-street2') || {}).value || '',
         city: (document.getElementById('billing-city') || {}).value || '',
         state: (document.getElementById('billing-state') || {}).value || '',
         zip: (document.getElementById('billing-zip') || {}).value || '',

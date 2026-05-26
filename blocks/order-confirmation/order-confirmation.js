@@ -85,7 +85,7 @@ function formatDate(isoString) {
 
 function formatAddress(addr) {
   if (!addr) return 'N/A';
-  const parts = [addr.street, addr.city, addr.state, addr.zip, addr.country].filter(Boolean);
+  const parts = [addr.street1, addr.street2, addr.city, addr.state, addr.zip, addr.country].filter(Boolean);
   return parts.join(', ');
 }
 
