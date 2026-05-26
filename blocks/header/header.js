@@ -222,6 +222,24 @@ function updateHeaderAuth(user) {
     myAccountLink.setAttribute('aria-label', 'My Account');
     myAccountLink.addEventListener('click', (e) => {
       e.stopPropagation();
+
+      // Fire BETA_MY_ACCOUNT_CLICK datalayer event
+      if (window.digitalData && typeof window.digitalData.push === 'function') {
+        window.digitalData.push({
+          eventId: crypto.randomUUID(),
+          eventType: 'BETA_MY_ACCOUNT_CLICK',
+          source: 'BETA_COMMERCE',
+          button: {
+            id: 'my-account-link',
+            name: 'My Account',
+            text: myAccountLink.textContent,
+            ariaLabel: myAccountLink.getAttribute('aria-label'),
+            classList: Array.from(myAccountLink.classList).join(' '),
+          },
+          user: { ...((window.digitalData && window.digitalData.user) || {}) },
+        });
+      }
+
       showMyAccountPanel(user);
     });
 
