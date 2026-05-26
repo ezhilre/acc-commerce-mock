@@ -224,21 +224,32 @@ function updateHeaderAuth(user) {
       e.stopPropagation();
 
       // Fire BETA_MY_ACCOUNT_CLICK datalayer event
+      const myAccountEvent = {
+        eventId: crypto.randomUUID(),
+        eventType: 'BETA_MY_ACCOUNT_CLICK',
+        source: 'BETA_COMMERCE',
+        button: {
+          id: 'my-account-link',
+          name: 'My Account',
+          text: myAccountLink.textContent,
+          ariaLabel: myAccountLink.getAttribute('aria-label'),
+          classList: Array.from(myAccountLink.classList).join(' '),
+        },
+        user: { ...((window.digitalData && window.digitalData.user) || {}) },
+      };
+
+      // Push to digitalData.events + fire digitalDataPush CustomEvent
       if (window.digitalData && typeof window.digitalData.push === 'function') {
-        window.digitalData.push({
-          eventId: crypto.randomUUID(),
-          eventType: 'BETA_MY_ACCOUNT_CLICK',
-          source: 'BETA_COMMERCE',
-          button: {
-            id: 'my-account-link',
-            name: 'My Account',
-            text: myAccountLink.textContent,
-            ariaLabel: myAccountLink.getAttribute('aria-label'),
-            classList: Array.from(myAccountLink.classList).join(' '),
-          },
-          user: { ...((window.digitalData && window.digitalData.user) || {}) },
-        });
+        window.digitalData.push(myAccountEvent);
       }
+
+      // Push to Adobe Data Layer (same pattern as pushToAdobeDataLayer in datalayer.js)
+      window.adobeDataLayer = window.adobeDataLayer || [];
+      window.adobeDataLayer.push({
+        event: myAccountEvent.eventType,
+        ...myAccountEvent,
+      });
+      console.log('[adobeDataLayer] BETA_MY_ACCOUNT_CLICK pushed:', JSON.stringify({ event: myAccountEvent.eventType, ...myAccountEvent }, null, 2));
 
       showMyAccountPanel(user);
     });
