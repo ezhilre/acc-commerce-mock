@@ -119,7 +119,7 @@ async function publishCartEventToKafka(cartItem, betacartId, cartItems) {
   // that customerId and email are never empty when the user IS signed in.
   const isLiveUserAuthenticated = user && user.authenticated === 'authenticated' && (user.customerId || user.email);
   let resolvedUser = user || {};
-  if (!isLiveUserAuthenticated) {
+    if (!isLiveUserAuthenticated) {
     try {
       const AUTH_COOKIE_NAME = 'auth_user';
       const match = document.cookie
@@ -128,9 +128,11 @@ async function publishCartEventToKafka(cartItem, betacartId, cartItems) {
         .find((c) => c.startsWith(`${AUTH_COOKIE_NAME}=`));
       if (match) {
         const cookieData = JSON.parse(decodeURIComponent(match.split('=').slice(1).join('=')));
-        if (cookieData && cookieData.uid) {
+        // Prefer cookieData.customerId (the stable numeric ID written since the fix).
+        // Fall back to cookieData.uid for sessions that pre-date the fix.
+        if (cookieData && (cookieData.customerId || cookieData.uid)) {
           resolvedUser = {
-            customerId: cookieData.uid || '',
+            customerId: cookieData.customerId || cookieData.uid || '',
             email: cookieData.email || '',
             authenticated: 'authenticated',
           };
@@ -721,10 +723,19 @@ window.addEventListener('authStateChanged', (e) => {
   const { user } = e.detail || {};
   if (user) {
     // Firebase user object only carries uid/email/displayName/phoneNumber.
+    // The numeric customerId (set at signup/signin time) is already present on
+    // window.digitalData.user if hydrateFromCookie() ran before this event fires.
+    // Prefer that resolved value over the raw Firebase uid so the same stable
+    // customerId is used throughout the session.
+    const existingUser = window.digitalData.user || {};
+    const resolvedCustomerId = (existingUser.customerId && existingUser.customerId !== user.uid)
+      ? existingUser.customerId  // already resolved to numeric ID via cookie hydration
+      : user.uid || '';          // fallback: uid (pre-fix sessions or first-ever login)
+
     // setUser() will merge the extended profile (gender, interests, dob, phone)
     // from sessionStorage automatically, so nothing is lost after page navigation.
     setUser({
-      customerId: user.uid || '',
+      customerId: resolvedCustomerId,
       email: user.email || '',
       firstName: user.displayName ? user.displayName.split(' ')[0] : '',
       lastName: user.displayName ? user.displayName.split(' ').slice(1).join(' ') : '',
@@ -831,7 +842,9 @@ window.addEventListener('clearCart', () => {
 
     window.digitalData.user = {
       authenticated: 'authenticated',
-      customerId: cookieData.uid || '',
+      // Prefer cookieData.customerId (stable numeric ID written at signup/signin).
+      // Fall back to cookieData.uid for sessions created before this fix.
+      customerId: cookieData.customerId || cookieData.uid || '',
       email: cookieData.email || '',
       firstName: sessionProfile.firstName || '',
       lastName: sessionProfile.lastName || '',

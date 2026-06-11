@@ -175,11 +175,12 @@ async function getFirebaseServices() {
 
 const AUTH_COOKIE_NAME = 'auth_user';
 
-function setAuthCookie(user) {
+function setAuthCookie(user, customerId) {
   const data = {
     uid: user.uid,
     email: user.email,
     emailVerified: user.emailVerified,
+    customerId: customerId || user.uid,
   };
   // Session cookie (expires when browser closes); add Max-Age for persistence
   document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(data))}; path=/; SameSite=Strict`;
@@ -500,17 +501,35 @@ function buildSignInPanel() {
     submit.textContent = 'Signing in…';
 
     try {
-      const { auth, signInWithEmailAndPassword } = await getFirebaseServices();
+      const { auth, db: firestoreDb, signInWithEmailAndPassword, doc: firestoreDoc } = await getFirebaseServices();
+      const { getDoc, query, where, collection, getDocs } = await import(`${FIREBASE_SDK_BASE}/firebase-firestore.js`);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+      // Look up the stored numeric customerId from Firestore using the Firebase uid.
+      // This ensures the same customerId (set at signup time) is used consistently
+      // in the cookie and datalayer after sign-in, rather than falling back to uid.
+      let resolvedCustomerId = userCredential.user.uid;
+      try {
+        const userSnap = await getDocs(
+          query(collection(firestoreDb, 'users'), where('uid', '==', userCredential.user.uid)),
+        );
+        if (!userSnap.empty) {
+          const userData = userSnap.docs[0].data();
+          if (userData.customerId) resolvedCustomerId = userData.customerId;
+        }
+      } catch (firestoreLookupErr) {
+        console.warn('[AuthModal] Firestore customerId lookup failed, falling back to uid:', firestoreLookupErr);
+      }
+
       form.reset();
-      // Set auth cookie and close modal immediately
-      setAuthCookie(userCredential.user);
+      // Set auth cookie with the resolved customerId and close modal immediately
+      setAuthCookie(userCredential.user, resolvedCustomerId);
       closeModal();
 
       // ── Push sign-in event to digitalData datalayer ────────────────────
       if (window.digitalData && window.digitalData.setUser) {
         window.digitalData.setUser({
-          customerId: userCredential.user.uid || '',
+          customerId: resolvedCustomerId,
           email: userCredential.user.email || '',
           firstName: userCredential.user.displayName
             ? userCredential.user.displayName.split(' ')[0]
@@ -624,8 +643,13 @@ function buildCreateAccountPanel() {
       console.log('Firebase User  :', user);
       console.groupEnd();
 
-      // ✅ Auth succeeded — set cookie, close modal, reset form, show toast
-      setAuthCookie(user);
+      // Generate the numeric customerId BEFORE setting the cookie so that
+      // all downstream consumers (cookie, datalayer, Firestore, Kafka) use
+      // the same stable ID for this user across page navigations.
+      const numericCustomerId = generateNumericCustomerId();
+
+      // ✅ Auth succeeded — set cookie (with customerId), close modal, reset form, show toast
+      setAuthCookie(user, numericCustomerId);
       form.reset();
       submit.disabled = false;
       submit.textContent = 'Create Account';
@@ -635,7 +659,6 @@ function buildCreateAccountPanel() {
       window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user } }));
 
       // ── Push signup event to digitalData datalayer (non-blocking) ────────
-      const numericCustomerId = generateNumericCustomerId();
       if (window.digitalData && window.digitalData.setUser) {
         window.digitalData.setUser({
           customerId: numericCustomerId,
@@ -655,9 +678,8 @@ function buildCreateAccountPanel() {
       }
 
       // ── Save to Firestore in the background (non-blocking) ────────────────
-      const customerId = numericCustomerId;
-      setDoc(doc(db, 'users', customerId), {
-        customerId,
+      setDoc(doc(db, 'users', numericCustomerId), {
+        customerId: numericCustomerId,
         uid: user.uid,
         firstName,
         lastName,
