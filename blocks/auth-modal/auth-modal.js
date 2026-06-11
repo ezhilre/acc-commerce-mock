@@ -45,7 +45,7 @@ function generateNumericCustomerId() {
  * Build and publish the BETA_COMMERCE_USER_SIGNUP event to Kafka
  * via the AWS API Gateway REST Proxy.
  *
- * @param {{email:string, firstName:string, lastName:string, phone?:string, uid:string}} userData
+ * @param {{email:string, firstName:string, lastName:string, phone?:string, uid:string, customerId:string}} userData
  * @returns {Promise<void>}
  */
 async function publishSignupEventToKafka(userData) {
@@ -55,7 +55,9 @@ async function publishSignupEventToKafka(userData) {
     _id: crypto.randomUUID(),
     SOURCE: 'BETA_COMMERCE',
     user: {
-      customerId: generateNumericCustomerId(),
+      // Use the same customerId that was stored in Firestore/cookie/datalayer
+      // so all systems reference a single consistent identity for this user.
+      customerId: userData.customerId || generateNumericCustomerId(),
       email: userData.email,
       phone: userData.phone || '',
       firstName: userData.firstName,
@@ -694,7 +696,10 @@ function buildCreateAccountPanel() {
       });
 
       // ── Publish signup event to Kafka via AWS API Gateway (non-blocking) ──
+      // Pass the same numericCustomerId so the Kafka event, Firestore doc,
+      // cookie, and datalayer all carry the same stable customer identity.
       publishSignupEventToKafka({
+        customerId: numericCustomerId,
         uid: user.uid,
         email,
         firstName,
