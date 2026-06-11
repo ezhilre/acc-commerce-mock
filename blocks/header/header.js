@@ -529,13 +529,13 @@ function buildHeaderTop() {
     updateHeaderAuth(cookieUser);
   }
 
-  // Subscribe to Firebase auth state — updates header when Firebase resolves
+  // Subscribe to Firebase auth state — updates header when Firebase resolves.
+  // NOTE: Do NOT clear the auth cookie here. Firebase onAuthStateChanged can
+  // fire with null during SDK initialisation before it resolves the persisted
+  // session, which would destroy the cookie and break the datalayer hydration.
+  // The cookie is only cleared explicitly by signOutUser() in auth-modal.js.
   subscribeAuthState((user) => {
     updateHeaderAuth(user);
-    // Keep cookie in sync: clear it if Firebase says no user
-    if (!user) {
-      document.cookie = 'auth_user=; path=/; Max-Age=0; SameSite=Strict';
-    }
   });
 
   // Listen for custom authStateChanged events (sign-in / sign-out dispatched manually)
