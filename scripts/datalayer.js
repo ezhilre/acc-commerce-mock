@@ -114,6 +114,20 @@ const KAFKA_CART_REST_PROXY_URL = `${KAFKA_REST_PROXY_BASE}/topics/${KAFKA_CART_
 async function publishCartEventToKafka(cartItem, betacartId, cartItems) {
   const { user } = window.digitalData;
 
+  // ── DIAGNOSTIC: log full state at publish time ──────────────────────────
+  console.group('[digitalData] 🔍 DIAGNOSTIC – publishCartEventToKafka state');
+  console.log('window.digitalData.user :', JSON.stringify(window.digitalData.user));
+  console.log('document.cookie (raw)   :', document.cookie);
+  const _diagCookie = document.cookie.split(';').map((c) => c.trim()).find((c) => c.startsWith('auth_user='));
+  console.log('auth_user cookie found  :', !!_diagCookie);
+  if (_diagCookie) {
+    try {
+      console.log('auth_user cookie value  :', JSON.parse(decodeURIComponent(_diagCookie.split('=').slice(1).join('='))));
+    } catch (ex) { console.log('cookie parse error:', ex); }
+  }
+  console.groupEnd();
+  // ── END DIAGNOSTIC ────────────────────────────────────────────────────────
+
   // If the live user node is still unauthenticated (e.g. datalayer not yet
   // hydrated from cookie), fall back to reading the auth cookie directly so
   // that customerId and email are never empty when the user IS signed in.
