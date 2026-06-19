@@ -16,7 +16,7 @@
  * the browser permission is set back to the 'default' (Ask) state.
  */
 
-import { initWebPush } from './webpush.js';
+import { initWebPush, sendPushSubscriptionToAEP } from './webpush.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const BANNER_ID = 'acc-push-banner';
@@ -343,7 +343,13 @@ function renderBlocked(banner) {
       // eslint-disable-next-line no-console
       console.log('[PushBanner] renderBlocked requestPermission result:', result);
       if (result === 'granted') {
-        // Permission was re-granted — show success and remove the banner
+        // Permission was re-granted — send subscription to AEP then show success
+        try {
+          await sendPushSubscriptionToAEP();
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.error('[PushBanner] renderBlocked sendPushSubscriptionToAEP error:', e);
+        }
         renderSuccess(banner);
         setTimeout(() => hideBanner(banner), 3000);
       }
@@ -398,6 +404,8 @@ function renderGranted(banner, uid) {
     renderLoading(banner);
     try {
       await initWebPush(uid);
+      // Re-send the subscription to AEP in case it wasn't registered before
+      await sendPushSubscriptionToAEP();
       renderSuccess(banner);
       setTimeout(() => hideBanner(banner), 3000);
     } catch (err) {
@@ -461,6 +469,13 @@ async function handleAllow(banner, uid) {
     console.log('[PushBanner] Permission result:', permission);
 
     if (permission === 'granted') {
+      // Send push subscription token to AEP — wait for SW to be ready first
+      try {
+        await sendPushSubscriptionToAEP();
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('[PushBanner] handleAllow sendPushSubscriptionToAEP error:', e);
+      }
       renderSuccess(banner);
       markDismissed(uid);
       setTimeout(() => hideBanner(banner), 3000);

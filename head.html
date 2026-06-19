@@ -6,31 +6,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <script nonce="aem">
   // Remove Adobe Experience Platform / Web SDK cookies (kndctr_* and AMCV_*)
-  document.cookie.split(';').forEach(function(c) {
-    var name = c.trim().split('=')[0];
-    if (name.indexOf('kndctr') === 0 || name.indexOf('AMCV') === 0) {
-      var domain = location.hostname;
-      var parts = domain.split('.');
-      // Try to delete with root domain (e.g. example.com) and current hostname
-      var domains = [domain];
-      if (parts.length > 2) domains.push(parts.slice(-2).join('.'));
-      domains.forEach(function(d) {
-        ['/', '/'].forEach(function(path) {
-          document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=' + path + ';domain=' + d;
-          document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=' + path;
+  // ⚠️  Only run on localhost — wiping these in production destroys Alloy's
+  // ECID identity, which means push subscriptions arrive at AEP with no
+  // profile to attach to and are silently dropped.
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    document.cookie.split(';').forEach(function(c) {
+      var name = c.trim().split('=')[0];
+      if (name.indexOf('kndctr') === 0 || name.indexOf('AMCV') === 0) {
+        var domain = location.hostname;
+        var parts = domain.split('.');
+        var domains = [domain];
+        if (parts.length > 2) domains.push(parts.slice(-2).join('.'));
+        domains.forEach(function(d) {
+          ['/', '/'].forEach(function(path) {
+            document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=' + path + ';domain=' + d;
+            document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=' + path;
+          });
         });
-      });
-    }
-  });
-
-  // Remove Adobe Alloy localStorage entries (com.adobe.alloy.*)
-  try {
-    Object.keys(localStorage).forEach(function(key) {
-      if (key.indexOf('com.adobe.alloy') === 0) {
-        localStorage.removeItem(key);
       }
     });
-  } catch (e) {}
+
+    // Remove Adobe Alloy localStorage entries (com.adobe.alloy.*)
+    try {
+      Object.keys(localStorage).forEach(function(key) {
+        if (key.indexOf('com.adobe.alloy') === 0) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (e) {}
+  }
 </script>
 <script nonce="aem" src="/scripts/aem.js" type="module"></script>
 <script nonce="aem" src="/scripts/scripts.js" type="module"></script>
