@@ -550,9 +550,11 @@ function buildSignInPanel() {
 
       // ── Send authenticated identity to AEP so the ECID is stitched ────────
       // Without this, push subscriptions land in AEP against an anonymous ECID
-      // with no profile to attach to. Sending the email + customerId here lets
-      // AEP's Identity Graph link the ECID → profile so push credentials appear.
+      // with no profile to attach to. Sending the email here lets AEP's
+      // Identity Graph link the ECID → profile so push credentials appear.
+      console.log('[AuthModal] window.alloy type:', typeof window.alloy);
       if (typeof window.alloy === 'function') {
+        console.log('[AuthModal] Sending identityMap to AEP for email:', userCredential.user.email);
         window.alloy('sendEvent', {
           xdm: {
             identityMap: {
@@ -563,7 +565,42 @@ function buildSignInPanel() {
               }],
             },
           },
-        }).catch((err) => console.error('[AuthModal] alloy sendEvent identity error:', err));
+        }).then(() => {
+          console.log('[AuthModal] alloy sendEvent identity sent ✅');
+        }).catch((err) => {
+          console.error('[AuthModal] alloy sendEvent identity error:', err);
+        });
+      } else {
+        // alloy not yet available — retry once it is loaded
+        console.warn('[AuthModal] window.alloy not available at sign-in time, queuing identity send…');
+        const maxWait = 10000;
+        const interval = 200;
+        let waited = 0;
+        const retryInterval = setInterval(() => {
+          waited += interval;
+          if (typeof window.alloy === 'function') {
+            clearInterval(retryInterval);
+            console.log('[AuthModal] alloy now available, sending identityMap for email:', userCredential.user.email);
+            window.alloy('sendEvent', {
+              xdm: {
+                identityMap: {
+                  Email: [{
+                    id: userCredential.user.email,
+                    authenticatedState: 'authenticated',
+                    primary: true,
+                  }],
+                },
+              },
+            }).then(() => {
+              console.log('[AuthModal] alloy sendEvent identity sent ✅ (delayed)');
+            }).catch((err) => {
+              console.error('[AuthModal] alloy sendEvent identity error (delayed):', err);
+            });
+          } else if (waited >= maxWait) {
+            clearInterval(retryInterval);
+            console.error('[AuthModal] alloy still not available after 10 s — identity not sent to AEP');
+          }
+        }, interval);
       }
 
       window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user: userCredential.user } }));
