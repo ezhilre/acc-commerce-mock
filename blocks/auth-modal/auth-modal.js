@@ -548,6 +548,24 @@ function buildSignInPanel() {
         });
       }
 
+      // ── Send authenticated identity to AEP so the ECID is stitched ────────
+      // Without this, push subscriptions land in AEP against an anonymous ECID
+      // with no profile to attach to. Sending the email + customerId here lets
+      // AEP's Identity Graph link the ECID → profile so push credentials appear.
+      if (typeof window.alloy === 'function') {
+        window.alloy('sendEvent', {
+          xdm: {
+            identityMap: {
+              Email: [{
+                id: userCredential.user.email,
+                authenticatedState: 'authenticated',
+                primary: true,
+              }],
+            },
+          },
+        }).catch((err) => console.error('[AuthModal] alloy sendEvent identity error:', err));
+      }
+
       window.dispatchEvent(new CustomEvent('authStateChanged', { detail: { user: userCredential.user } }));
     } catch (err) {
       console.error('[AuthModal] Sign-in error:', err);
