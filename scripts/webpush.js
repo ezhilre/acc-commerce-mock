@@ -74,43 +74,23 @@ export async function sendPushSubscriptionToAEP() {
   }
 
   try {
-    // Wait until the service worker is fully activated (Alloy registers its own
-    // SW via serviceWorkerLocation in the configure call).
+    // Wait until the service worker is fully activated.
+    // alloy("sendPushSubscription") internally calls PushManager.subscribe()
+    // with the VAPID key from the AJO channel surface — it both creates the
+    // subscription AND sends it to AEP in a single call.
+    // An active SW is required for PushManager.subscribe() to succeed.
     const registration = await navigator.serviceWorker.ready;
     // eslint-disable-next-line no-console
     console.log('[WebPush] SW ready. scriptURL:', registration.active?.scriptURL);
 
-    // Give Alloy up to 5 s to call PushManager.subscribe() internally.
-    // Alloy does this asynchronously after SW activation, so we poll briefly.
-    let subscription = await registration.pushManager.getSubscription();
-    if (!subscription) {
-      // eslint-disable-next-line no-console
-      console.log('[WebPush] No push subscription yet — waiting up to 5 s for Alloy to create one…');
-      await new Promise((resolve) => {
-        let elapsed = 0;
-        const interval = setInterval(async () => {
-          elapsed += 500;
-          subscription = await registration.pushManager.getSubscription();
-          if (subscription || elapsed >= 5000) {
-            clearInterval(interval);
-            resolve();
-          }
-        }, 500);
-      });
-    }
-
-    if (!subscription) {
-      // eslint-disable-next-line no-console
-      console.error('[WebPush] sendPushSubscriptionToAEP: still no push subscription after 5 s. '
-        + 'Check that alloy("configure") has serviceWorkerLocation set to /alloyServiceWorker.js '
-        + 'and that the VAPID key is configured in the AJO channel surface.');
-      return;
-    }
-
-    // eslint-disable-next-line no-console
-    console.log('[WebPush] Push subscription endpoint:', subscription.endpoint);
-
+    // Single call: Alloy creates the PushSubscription (PushManager.subscribe)
+    // and sends the resulting token to AEP in one round trip.
     await window.alloy('sendPushSubscription');
+
+    // Confirm the subscription now exists for debugging purposes
+    const subscription = await registration.pushManager.getSubscription();
+    // eslint-disable-next-line no-console
+    console.log('[WebPush] Push subscription endpoint:', subscription?.endpoint ?? 'none');
     // eslint-disable-next-line no-console
     console.log('[WebPush] sendPushSubscription sent to AEP ✅');
   } catch (err) {
