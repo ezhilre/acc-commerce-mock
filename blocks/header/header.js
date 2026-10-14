@@ -615,6 +615,11 @@ function buildLumaMainNav() {
     // Add click event listener for SALE link to track user engagement
     if (item.text === 'SALE') {
       link.addEventListener('click', (e) => {
+        // Prevent default navigation to allow event tracking to complete
+        e.preventDefault();
+        
+        const targetHref = item.href;
+        
         // Create SALE_LINK_CLICK event similar to ADD_TO_CART structure
         const saleLinkEvent = {
           eventId: crypto.randomUUID(),
@@ -629,6 +634,13 @@ function buildLumaMainNav() {
           user: { ...((window.digitalData && window.digitalData.user) || {}) },
         };
 
+        console.group('[digitalData] 🏷️ SALE Link Click');
+        console.log('Event ID:', saleLinkEvent.eventId);
+        console.log('Timestamp:', saleLinkEvent.timestamp);
+        console.log('Target URL:', targetHref);
+        console.log('User:', saleLinkEvent.user);
+        console.groupEnd();
+
         // Push to digitalData.events + fire digitalDataPush CustomEvent
         if (window.digitalData && typeof window.digitalData.push === 'function') {
           window.digitalData.push(saleLinkEvent);
@@ -642,6 +654,11 @@ function buildLumaMainNav() {
         });
         
         console.log('[adobeDataLayer] SALE_LINK_CLICK pushed:', JSON.stringify({ event: saleLinkEvent.eventType, ...saleLinkEvent }, null, 2));
+        
+        // Navigate after a short delay to ensure event tracking completes
+        setTimeout(() => {
+          window.location.href = targetHref;
+        }, 100);
       });
     }
     
