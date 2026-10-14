@@ -664,12 +664,12 @@ function buildLumaMainNav() {
         console.log('[adobeDataLayer] ✅ Event pushed to adobeDataLayer');
         console.log('[adobeDataLayer] SALE_LINK_CLICK data:', JSON.stringify({ event: saleLinkEvent.eventType, ...saleLinkEvent }, null, 2));
         
-        // Navigate after a short delay to ensure event tracking completes
-        console.log('[header.js] ⏱️ Navigating to', targetHref, 'in 100ms...');
+        // Navigate after a delay to ensure event tracking completes
+        console.log('[header.js] ⏱️ Navigating to', targetHref, 'in 500ms...');
         setTimeout(() => {
           console.log('[header.js] 🚀 Navigating now...');
           window.location.href = targetHref;
-        }, 100);
+        }, 500);
       });
       
       console.log('[header.js] ✅ SALE_LINK_CLICK event listener successfully attached');
