@@ -611,6 +611,40 @@ function buildLumaMainNav() {
     link.href = item.href;
     link.textContent = item.text;
     link.classList.add('luma-nav-link');
+    
+    // Add click event listener for SALE link to track user engagement
+    if (item.text === 'SALE') {
+      link.addEventListener('click', (e) => {
+        // Create SALE_LINK_CLICK event similar to ADD_TO_CART structure
+        const saleLinkEvent = {
+          eventId: crypto.randomUUID(),
+          eventType: 'SALE_LINK_CLICK',
+          source: 'BETA_COMMERCE',
+          timestamp: new Date().toISOString(),
+          link: {
+            text: item.text,
+            href: item.href,
+            classList: Array.from(link.classList).join(' '),
+          },
+          user: { ...((window.digitalData && window.digitalData.user) || {}) },
+        };
+
+        // Push to digitalData.events + fire digitalDataPush CustomEvent
+        if (window.digitalData && typeof window.digitalData.push === 'function') {
+          window.digitalData.push(saleLinkEvent);
+        }
+
+        // Push to Adobe Data Layer
+        window.adobeDataLayer = window.adobeDataLayer || [];
+        window.adobeDataLayer.push({
+          event: saleLinkEvent.eventType,
+          ...saleLinkEvent,
+        });
+        
+        console.log('[adobeDataLayer] SALE_LINK_CLICK pushed:', JSON.stringify({ event: saleLinkEvent.eventType, ...saleLinkEvent }, null, 2));
+      });
+    }
+    
     listItem.appendChild(link);
     navList.appendChild(listItem);
   });
