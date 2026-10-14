@@ -664,12 +664,24 @@ function buildLumaMainNav() {
         console.log('[adobeDataLayer] ✅ Event pushed to adobeDataLayer');
         console.log('[adobeDataLayer] SALE_LINK_CLICK data:', JSON.stringify({ event: saleLinkEvent.eventType, ...saleLinkEvent }, null, 2));
         
+        // Show loading indicator during delay
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.style.cssText = `
+          position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+          background: rgba(0,0,0,0.8); color: white; padding: 20px 40px;
+          border-radius: 8px; z-index: 99999; font-size: 16px;
+          font-weight: bold;
+        `;
+        loadingIndicator.textContent = 'Tracking event... Navigating to SALE';
+        document.body.appendChild(loadingIndicator);
+        
         // Navigate after a delay to ensure event tracking completes
-        console.log('[header.js] ⏱️ Navigating to', targetHref, 'in 500ms...');
+        console.log('[header.js] ⏱️ Navigating to', targetHref, 'in 2000ms...');
         setTimeout(() => {
           console.log('[header.js] 🚀 Navigating now...');
+          document.body.removeChild(loadingIndicator);
           window.location.href = targetHref;
-        }, 500);
+        }, 2000);
       });
       
       console.log('[header.js] ✅ SALE_LINK_CLICK event listener successfully attached');
